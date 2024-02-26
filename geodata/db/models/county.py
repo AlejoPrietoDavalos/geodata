@@ -1,0 +1,2 @@
+#class County(GeoZoneModel):
+#    pass
