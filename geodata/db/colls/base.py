@@ -1,4 +1,4 @@
-from typing import Type, Tuple
+from typing import Type, Tuple, List
 from abc import ABC, abstractproperty
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -72,3 +72,6 @@ class BaseRegionColl(ABC):
             for i, future in enumerate(as_completed(iter_futures), start=1):
                 id_csc, id_wikidata = future.result()
                 print(f"{i}/{num_docs}")
+
+    def random_docs(self, size: int = 1) -> List[dict]:
+        return list(self.coll.aggregate([{"$sample": {"size": size}}]))
