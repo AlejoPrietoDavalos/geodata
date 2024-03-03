@@ -9,17 +9,15 @@ from pymongo.database import Database
 
 from geodata.db.colls.countries import CountriesColl
 from geodata.db.colls.states import StatesColl
-from geodata.db.colls.countys import CountysColl
-from geodata.db.colls.places import PlacesColl
+from geodata.db.colls.cities import CitiesColl
 
-__all__ = ["WorldDataDB", "WORLD_DATA", "COUNTRIES", "STATES", "COUNTYS", "PLACES"]
+__all__ = ["WorldDataDB", "WORLD_DATA", "COUNTRIES", "STATES", "CITIES"]
 
 
 WORLD_DATA = "world_data"
 COUNTRIES = "countries"
 STATES = "states"
-COUNTYS = "countys"
-PLACES = "places"
+CITIES = "cities"
 
 class BaseWorldDataDB(ABC):
     def __init__(self, mongo_client: MongoClient, db_name: str = WORLD_DATA):
@@ -41,14 +39,10 @@ class BaseWorldDataDB(ABC):
     @cached_property
     def states(self) -> StatesColl:
         return StatesColl(coll=self.db[STATES])
-    
-    @cached_property
-    def countys(self) -> CountysColl:
-        return CountysColl(coll=self.db[COUNTYS])
 
     @cached_property
-    def places(self) -> PlacesColl:
-        return PlacesColl(coll=self.db[PLACES])
+    def cities(self) -> CitiesColl:
+        return CitiesColl(coll=self.db[CITIES])
 
 
 class WorldDataDB(BaseWorldDataDB):

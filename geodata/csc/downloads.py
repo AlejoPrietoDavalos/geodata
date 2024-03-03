@@ -40,11 +40,11 @@ def cols_delete_cities() -> list:
 
 def cols_rename_cities() -> dict:
     return {
-        "id": "place_id_csc",
-        "name": "place_name",
+        "id": "city_id_csc",
+        "name": "city_name",
         "state_id": "state_id_csc",
         "country_id": "country_id_csc",
-        "wikiDataId": "place_id_wikidata"
+        "wikiDataId": "city_id_wikidata"
     }
 
 
