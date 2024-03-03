@@ -5,3 +5,7 @@ from geodata.db.colls.base import BaseRegionColl
 class CountriesColl(BaseRegionColl):
     def __init__(self, coll: Collection):
         super().__init__(coll=coll)
+    
+    @property
+    def name_singular(self) -> str:
+        return "country"
