@@ -4,22 +4,21 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 from geodata.db.models.city import City
 
+def url_wikidata_sparql() -> str:
+    return "https://query.wikidata.org/sparql"
+
 def search_city_wikidata_id(city: City) -> Tuple[int, str | None]:
     """
     Function to find the Wikidata ID of a place given its name and country code.
     :return: id_wikidata of the place if found, None otherwise.
     """
-    # URL base de la API de Wikidata
-    sparql_url = "https://query.wikidata.org/sparql"
-    sparql = SPARQLWrapper(sparql_url)
-
-    # Consulta SPARQL para buscar el ID de Wikidata
+    sparql = SPARQLWrapper(url_wikidata_sparql())
     query = f"""
     SELECT ?place ?placeLabel WHERE {{
-        ?place wdt:P31/wdt:P279* wd:Q486972; # Instancia de (o subclase de) asentamiento humano
-            rdfs:label "{city.city_name}"@en; # Nombre del lugar en inglés
+        ?place wdt:P31/wdt:P279* wd:Q486972; # Instance or Subclass of human as settlement.
+            rdfs:label "{city.city_name}"@en;
             wdt:P17 ?country. # País del lugar
-        ?country wdt:P297 "{city.country_code}". # Código ISO 3166-1 alpha-2 del país
+        ?country wdt:P297 "{city.country_code}". # Country code ISO 3166-1 alpha-2.
         SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
     }}
     LIMIT 1
