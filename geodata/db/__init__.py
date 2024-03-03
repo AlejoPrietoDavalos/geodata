@@ -1,1 +1,1 @@
-from geodata.db.client import WorldDataDB, WORLD_DATA, COUNTRIES, STATES, COUNTYS, PLACES
+from geodata.db.client import WorldDataDB, WORLD_DATA, COUNTRIES, STATES, CITIES
