@@ -18,9 +18,7 @@ StateTypes = Literal[
 
 class State(GeoZoneModel):
     state_id_csc: int
-    country_id_csc: int
     state_name: str
-    country_code: str
     state_code: Optional[str]
     state_type_csc: StateTypes
     state_id_wikidata: Optional[str] = None
