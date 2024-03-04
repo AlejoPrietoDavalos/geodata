@@ -103,7 +103,8 @@ class BaseRegionColl(ABC):
     def search_websites_and_postal_codes(
             self,
             model: Country | State | City,
-            mode: Literal["all", "only_empty"] = "only_empty"
+            mode: Literal["all", "only_empty"] = "all",
+            verbose: bool = True
         ) -> Tuple[List[str], List[str]]:
         if mode == "all":
             websites, postal_codes = search_websites_and_postal_codes(model.id_wikidata)
@@ -122,13 +123,15 @@ class BaseRegionColl(ABC):
             model.websites_wikidata.extend(websites)
             model.postal_codes_wikidata.extend(postal_codes)
             self.update_websites_postal_codes(model.id_csc, model.websites_wikidata, model.postal_codes_wikidata)
-            print(f"id_csc={model.id_csc} | websites={model.websites_wikidata} | postal_codes_wikidata={model.postal_codes_wikidata}")
+            if verbose:
+                print(f"id_csc={model.id_csc} | websites_wikidata={model.websites_wikidata} | postal_codes_wikidata={model.postal_codes_wikidata}")
         return websites, postal_codes
 
     def search_all_websites_and_postal_codes(
             self,
-            mode: Literal["all", "only_empty"] = "only_empty",
-            max_workers: int = DEFAULT_WORKERS
+            mode: Literal["all", "only_empty"] = "all",
+            max_workers: int = DEFAULT_WORKERS,
+            verbose: bool = True
         ) -> None:
         if mode not in ["all", "only_empty"]:
             raise ValueError("`mode` incorrect.")
@@ -136,10 +139,11 @@ class BaseRegionColl(ABC):
         num_docs = sum(1 for _ in self.coll.find({}))
 
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            iter_futures = (pool.submit(self.search_websites_and_postal_codes, self.cls_coll(**doc), mode) for doc in self.coll.find({}))
+            iter_futures = (pool.submit(self.search_websites_and_postal_codes, self.cls_coll(**doc), mode, verbose) for doc in self.coll.find({}))
             for i, future in enumerate(as_completed(iter_futures), start=1):
                 websites, postal_codes = future.result()
-                print(f"{i}/{num_docs}")
+                if verbose:
+                    print(f"{i}/{num_docs}")
 
     def random_docs(self, size: int = 1) -> List[dict]:
         return list(self.coll.aggregate([{"$sample": {"size": size}}]))

@@ -1,3 +1,4 @@
+from typing import Literal
 from abc import ABC
 from functools import cached_property
 
@@ -53,36 +54,45 @@ class WorldDataDB(BaseWorldDataDB):
         self.states.coll.create_index([(self.states.column_id_csc, 1)], unique=True)
         self.cities.coll.create_index([(self.cities.column_id_csc, 1)], unique=True)
 
-    def download_csc(self, verbose: bool = True) -> None:
+    def print_delimiter(self, name: str) -> None:
         print("~"*40)
-        print(f"{'countries':~^40}")
+        print("~"*40)
+        print(f"{name:~^40}")
+
+    def download_csc(self, verbose: bool = True) -> None:
+        self.print_delimiter("countries")
         df_countries = download_csv(url=UrlsCSC.countries)
         self.countries.process_df_csc(df_countries, verbose=verbose)
 
-        print("~"*40)
-        print("~"*40)
-        print(f"{'states':~^40}")
+        self.print_delimiter("states")
         df_states = download_csv(url=UrlsCSC.states)
         self.states.process_df_csc(df_states, verbose=verbose)
 
-        print("~"*40)
-        print("~"*40)
-        print(f"{'cities':~^40}")
+        self.print_delimiter("cities")
         df_cities = download_csv(url=UrlsCSC.cities)
         self.cities.process_df_csc(df_cities, verbose=verbose)
     
     def download_id_wikidata(self, max_workers: int = 10, verbose: bool = True) -> None:
-        print("~"*40)
-        print("~"*40)
-        print(f"{'countries':~^40}")
+        self.print_delimiter("countries")
         self.countries.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
 
-        print("~"*40)
-        print("~"*40)
-        print(f"{'states':~^40}")
+        self.print_delimiter("states")
         self.states.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
 
-        print("~"*40)
-        print("~"*40)
-        print(f"{'cities':~^40}")
+        self.print_delimiter("cities")
         self.cities.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
+
+    def download_websites_postals(
+            self,
+            mode: Literal["all", "only_empty"] = "all",
+            max_workers: int = 10,
+            verbose: bool = True
+        ) -> None:
+        self.print_delimiter("countries")
+        self.countries.search_all_websites_and_postal_codes(mode=mode, max_workers=max_workers, verbose=verbose)
+
+        self.print_delimiter("states")
+        self.states.search_all_websites_and_postal_codes(mode=mode, max_workers=max_workers, verbose=verbose)
+
+        self.print_delimiter("cities")
+        self.cities.search_all_websites_and_postal_codes(mode=mode, max_workers=max_workers, verbose=verbose)
