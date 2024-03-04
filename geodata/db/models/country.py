@@ -8,3 +8,12 @@ class Country(GeoZoneModel):
     country_name_native: Optional[str] = None
     phone_code: str
     country_id_wikidata: Optional[str] = None
+
+    @property
+    def id_csc(self) -> int:
+        return self.country_id_csc
+
+    @property
+    def id_wikidata(self) -> str | None:
+        """ `country_id_wikidata`."""
+        return self.country_id_wikidata

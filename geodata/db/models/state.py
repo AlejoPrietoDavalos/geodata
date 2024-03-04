@@ -22,3 +22,12 @@ class State(GeoZoneModel):
     state_code: Optional[str]
     state_type_csc: StateTypes
     state_id_wikidata: Optional[str] = None
+
+    @property
+    def id_csc(self) -> int:
+        return self.state_id_csc
+
+    @property
+    def id_wikidata(self) -> str | None:
+        """ `state_id_wikidata`."""
+        return self.state_id_wikidata
