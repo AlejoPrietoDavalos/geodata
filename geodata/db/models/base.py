@@ -1,9 +1,12 @@
 from abc import ABC, abstractproperty
+from datetime import datetime
 from typing import List
 
 from pydantic import BaseModel, Field
 
 class GeoZoneModel(ABC, BaseModel):
+    created_time: datetime
+    updated_time: datetime
     country_code: str
     country_id_csc: int
     latitude: float
