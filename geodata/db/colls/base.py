@@ -1,11 +1,15 @@
-from typing import Type, Tuple, List, Literal, Generator
+from typing import Type, Tuple, List, Literal
+from datetime import datetime
 from abc import ABC, abstractproperty
-from concurrent.futures import ThreadPoolExecutor, as_completed, Future
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
 
+from pymongo import errors
 from pymongo.results import UpdateResult
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 import numpy as np
+import pandas as pd
 
 from geodata.wikidata.search import (
     search_country_wikidata_id, search_state_wikidata_id,
@@ -17,6 +21,12 @@ from geodata.db.models.state import State
 from geodata.db.models.city import City
 
 DEFAULT_WORKERS = 10
+COUNTRY_CODE = "country_code"
+CREATED_TIME = "created_time"
+UPDATED_TIME = "updated_time"
+
+def datetime_now_str() -> str:
+    return datetime.utcnow().strftime("%Y_%m_%d_%H_%M_%S")
 
 class BaseRegionColl(ABC):
     def __init__(self, coll: Collection):
@@ -48,16 +58,18 @@ class BaseRegionColl(ABC):
         return self.coll.find({self.column_id_wikidata: None})
 
     def update_id_wikidata(self, id_csc: int, id_wikidata: str) -> UpdateResult:
+        current_time = datetime.utcnow()
         result = self.coll.update_one(
             {self.column_id_csc: int(id_csc)},
-            {"$set": {self.column_id_wikidata: id_wikidata}}
+            {"$set": {self.column_id_wikidata: id_wikidata, UPDATED_TIME: current_time}}
         )
         return result
 
     def update_websites_postal_codes(self, id_csc: int, websites: List[str], postal_codes: List[str]) -> UpdateResult:
+        current_time = datetime.utcnow()
         result = self.coll.update_one(
             {self.column_id_csc: int(id_csc)},
-            {"$set": {"websites_wikidata": websites, "postal_codes_wikidata": postal_codes}}
+            {"$set": {"websites_wikidata": websites, "postal_codes_wikidata": postal_codes, UPDATED_TIME: current_time}}
         )
         return result
 
@@ -129,3 +141,68 @@ class BaseRegionColl(ABC):
 
     def random_docs(self, size: int = 1) -> List[dict]:
         return list(self.coll.aggregate([{"$sample": {"size": size}}]))
+
+    def upsert_model_csc(self, model_new: Country | State | City) -> bool:
+        """ Return True if is a new document."""
+        doc_old = self.coll.find_one({self.column_id_csc: model_new.id_csc})
+        doc_new = model_new.model_dump()
+        
+        if doc_old is None:
+            is_new = True
+            return is_new
+        else:
+            update_fields = {}
+            for k,v in doc_new.items():
+                if k not in doc_old or (doc_old[k] is None and v is not None):
+                    update_fields[k] = v
+            
+            if update_fields:
+                update_fields[UPDATED_TIME] = doc_new[UPDATED_TIME]
+                self.coll.update_one({self.column_id_csc: doc_new[model_new.id_csc]}, {"$set": update_fields})
+            is_new = False
+            return is_new
+
+    def process_df_csc(self, df_csc: pd.DataFrame, verbose: bool = False) -> None:
+        csc_broken = {"broken": [], "no_country_code": []}
+        docs_new = []
+        for i, row in df_csc.iterrows():
+            row_json = json.loads(row.to_json())
+            if row[COUNTRY_CODE] is not None:
+                try:
+                    current_time = datetime.utcnow()
+                    model_new = self.cls_coll(
+                        created_time = current_time,
+                        updated_time = current_time,
+                        **row_json
+                    )
+                    is_new = self.upsert_model_csc(model_new)
+                    if is_new:
+                        docs_new.append(model_new.model_dump())
+                except Exception as e:
+                    if verbose:
+                        print(e)
+                    csc_broken["broken"].append(row_json)
+            else:
+                if verbose:
+                    print("no country_code")
+                csc_broken["no_country_code"].append(row_json)
+            
+            print(f"{i+1}/{len(df_csc)}")
+            if i % 2000 == 0:
+                try:
+                    if len(docs_new) != 0:
+                        self.coll.insert_many(docs_new, ordered=False)
+                        docs_new = []
+                except errors.BulkWriteError as e:
+                    print(e.details)
+        
+        try:
+            if len(docs_new) != 0:
+                self.coll.insert_many(docs_new, ordered=False)
+                docs_new = []
+        except errors.BulkWriteError as e:
+            print(e.details)
+        
+        date_now_str = datetime_now_str()
+        with open(f"{self.name_singular}_broken_{date_now_str}.json", "w") as f:
+            json.dump(csc_broken, f)
