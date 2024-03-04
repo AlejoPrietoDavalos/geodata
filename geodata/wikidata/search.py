@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 
 from SPARQLWrapper import SPARQLWrapper, JSON
 
@@ -84,3 +84,31 @@ def search_city_wikidata_id(city: City) -> Tuple[int, str | None]:
     bindings = results["results"]["bindings"]
     city_id_wikidata = None if len(bindings) == 0 else bindings[0]["place"]["value"].split('/')[-1]
     return city.city_id_csc, city_id_wikidata
+
+
+def search_websites_and_postal_codes(id_wikidata: str | None) -> Tuple[List[str], List[str]]:
+    if id_wikidata is None:
+        return [], []
+    sparql = get_sparql()
+    query = f"""
+    SELECT ?website ?postalCode WHERE {{
+      OPTIONAL {{ wd:{id_wikidata} wdt:P856 ?website. }}
+      OPTIONAL {{ wd:{id_wikidata} wdt:P281 ?postalCode. }}
+    }}
+    """
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    results = sparql.query().convert()
+
+    websites = []
+    postal_codes = []
+    for binding in results["results"]["bindings"]:
+        if "website" in binding:
+            websites.append(binding["website"]["value"])
+        if "postalCode" in binding:
+            postal_codes.append(binding["postalCode"]["value"])
+
+    return websites, postal_codes
+
+
+
