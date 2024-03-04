@@ -70,3 +70,19 @@ class WorldDataDB(BaseWorldDataDB):
         print(f"{'cities':~^40}")
         df_cities = download_csv(url=UrlsCSC.cities)
         self.cities.process_df_csc(df_cities, verbose=verbose)
+    
+    def download_id_wikidata(self, max_workers: int = 10, verbose: bool = True) -> None:
+        print("~"*40)
+        print("~"*40)
+        print(f"{'countries':~^40}")
+        self.countries.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
+
+        print("~"*40)
+        print("~"*40)
+        print(f"{'states':~^40}")
+        self.states.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
+
+        print("~"*40)
+        print("~"*40)
+        print(f"{'cities':~^40}")
+        self.cities.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)

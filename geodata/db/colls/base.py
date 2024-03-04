@@ -73,7 +73,7 @@ class BaseRegionColl(ABC):
         )
         return result
 
-    def search_id_wikidata(self, model: Country | State | City) -> Tuple[int, str | None]:
+    def search_id_wikidata(self, model: Country | State | City, verbose: bool = True) -> Tuple[int, str | None]:
         if isinstance(model, Country):
             id_csc, id_wikidata = search_country_wikidata_id(model)
         elif isinstance(model, State):
@@ -85,18 +85,20 @@ class BaseRegionColl(ABC):
 
         if id_wikidata is not None:
             self.update_id_wikidata(id_csc, id_wikidata)
-            print(f"Updated: {self.column_id_csc}={id_csc} | {self.column_id_wikidata}={id_wikidata}")
+            if verbose:
+                print(f"Updated: {self.column_id_csc}={id_csc} | {self.column_id_wikidata}={id_wikidata}")
         return id_csc, id_wikidata
 
-    def search_all_none_id_wikidata(self, max_workers: int = DEFAULT_WORKERS) -> None:
+    def search_all_none_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
         num_docs = sum(1 for _ in self.find_id_wikidata_none())
 
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            iter_futures = (pool.submit(self.search_id_wikidata, self.cls_coll(**doc)) for doc in self.find_id_wikidata_none())
+            iter_futures = (pool.submit(self.search_id_wikidata, self.cls_coll(**doc), verbose) for doc in self.find_id_wikidata_none())
             
             for i, future in enumerate(as_completed(iter_futures), start=1):
                 id_csc, id_wikidata = future.result()
-                print(f"{i}/{num_docs}")
+                if verbose:
+                    print(f"{i}/{num_docs}")
 
     def search_websites_and_postal_codes(
             self,
