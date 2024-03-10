@@ -1,6 +1,7 @@
 from typing import Literal
-from abc import ABC
 from functools import cached_property
+from abc import ABC
+import json
 
 from pymongo import MongoClient
 from pymongo.database import Database
@@ -11,7 +12,7 @@ from geodata.db.colls.countries import CountriesColl
 from geodata.db.colls.states import StatesColl
 from geodata.db.colls.cities import CitiesColl
 
-__all__ = ["WorldDataDB", "WORLD_DATA", "COUNTRIES", "STATES", "CITIES"]
+__all__ = ["WorldDataDB", "WORLD_DATA", "COUNTRIES", "STATES", "CITIES", "DB_NAME"]
 
 
 WORLD_DATA = "world_data"
@@ -19,10 +20,20 @@ COUNTRIES = "countries"
 STATES = "states"
 CITIES = "cities"
 
+DB_NAME = "db_name"
+
+
+def read_cfg() -> dict:
+    with open("config.json", "r") as f:
+        cfg = json.load(f)
+    return cfg
+
+
 class BaseWorldDataDB(ABC):
-    def __init__(self, mongo_client: MongoClient, db_name: str = WORLD_DATA):
+    def __init__(self, mongo_client: MongoClient):
         self._client = mongo_client
-        self._db = self.client[db_name]
+        self._cfg = read_cfg()
+        self._db = self.client[self._cfg[DB_NAME]]
     
     @property
     def client(self) -> MongoClient:
@@ -32,6 +43,10 @@ class BaseWorldDataDB(ABC):
     def db(self) -> Database:
         return self._db
     
+    @property
+    def cfg(self) -> dict:
+        return self._cfg
+
     @cached_property
     def countries(self) -> CountriesColl:
         return CountriesColl(coll=self.db[COUNTRIES])
@@ -46,8 +61,8 @@ class BaseWorldDataDB(ABC):
 
 
 class WorldDataDB(BaseWorldDataDB):
-    def __init__(self, mongo_client: MongoClient, db_name: str = WORLD_DATA):
-        super().__init__(mongo_client=mongo_client, db_name=db_name)
+    def __init__(self, mongo_client: MongoClient):
+        super().__init__(mongo_client=mongo_client)
 
     def set_unique_keys(self) -> None:
         self.countries.coll.create_index(self.countries.column_id_csc, unique=True)
