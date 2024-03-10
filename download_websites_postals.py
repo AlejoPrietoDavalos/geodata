@@ -10,6 +10,7 @@ def main(mode: Literal["all", "only_empty"] = "all", max_workers: int = 10, verb
     db.download_websites_postals(mode=mode, max_workers=max_workers, verbose=verbose)
 
 if __name__ == "__main__":
-    MAX_WORKERS = 10
+    MODE = "all"        # If 'all' only 
+    MAX_WORKERS = 5
     VERBOSE = True      # Can redirect to .log file.
-    main(max_workers=MAX_WORKERS, verbose=VERBOSE)
+    main(mode=MODE, max_workers=MAX_WORKERS, verbose=VERBOSE)

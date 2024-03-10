@@ -8,6 +8,6 @@ def main(max_workers: int = 10, verbose: bool = True):
     db.download_id_wikidata(max_workers=max_workers, verbose=verbose)
 
 if __name__ == "__main__":
-    MAX_WORKERS = 10
+    MAX_WORKERS = 5
     VERBOSE = True      # Can redirect to .log file.
     main(max_workers=MAX_WORKERS, verbose=VERBOSE)
