@@ -25,6 +25,7 @@ pip install -r requirements.txt
 - The following scripts can be run in any order or skipping some.
 - It is suggested to do it in the marked order for an optimized download.
 - There are 3 scripts for downloading and updating the DB:
+0. `config_indexes.py:` For the first and only time, run to set the unique indexes on the collections.
 1. `download_csc.py:` Download data from the **Countries-States-Cities Github repository**. Creates and updates collections within the DB.
 2. `download_id_wikidata.py:` Given the **country_code** and the **place name**. Search WikiData with those clauses and extract their associated **wikidata_id**.
 3. `download_websites_postals.py:` Given the **id_wikidata**, it searches WikiData for postal codes and websites, only adding non-repeated ones other than empty. And accumulates them in a **list**.
