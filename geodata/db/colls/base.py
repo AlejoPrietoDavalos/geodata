@@ -11,10 +11,7 @@ from pymongo.cursor import Cursor
 import numpy as np
 import pandas as pd
 
-from geodata.wikidata.search import (
-    search_country_wikidata_id, search_state_wikidata_id,
-    search_city_wikidata_id, search_websites_and_postal_codes
-)
+from geodata.wikidata.search import search_id_wikidata, search_websites_and_postal_codes
 from geodata.db.models.base import GeoZoneModel
 from geodata.db.models.country import Country
 from geodata.db.models.state import State
@@ -24,6 +21,7 @@ DEFAULT_WORKERS = 10
 COUNTRY_CODE = "country_code"
 CREATED_TIME = "created_time"
 UPDATED_TIME = "updated_time"
+
 
 def datetime_now_str() -> str:
     return datetime.utcnow().strftime("%Y_%m_%d_%H_%M_%S")
@@ -74,14 +72,7 @@ class BaseRegionColl(ABC):
         return result
 
     def search_id_wikidata(self, model: Country | State | City, verbose: bool = True) -> Tuple[int, str | None]:
-        if isinstance(model, Country):
-            id_csc, id_wikidata = search_country_wikidata_id(model)
-        elif isinstance(model, State):
-            id_csc, id_wikidata = search_state_wikidata_id(model)
-        elif isinstance(model, City):
-            id_csc, id_wikidata = search_city_wikidata_id(model)
-        else:
-            raise ValueError("Invalid object, expected `Country`, `State` or `City`.")
+        id_csc, id_wikidata = search_id_wikidata(model)
 
         if id_wikidata is not None:
             self.update_id_wikidata(id_csc, id_wikidata)
