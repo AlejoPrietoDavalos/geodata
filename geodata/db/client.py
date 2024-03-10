@@ -50,9 +50,9 @@ class WorldDataDB(BaseWorldDataDB):
         super().__init__(mongo_client=mongo_client, db_name=db_name)
 
     def set_unique_keys(self) -> None:
-        self.countries.coll.create_index([(self.countries.column_id_csc, 1)], unique=True)
-        self.states.coll.create_index([(self.states.column_id_csc, 1)], unique=True)
-        self.cities.coll.create_index([(self.cities.column_id_csc, 1)], unique=True)
+        self.countries.coll.create_index(self.countries.column_id_csc, unique=True)
+        self.states.coll.create_index(self.states.column_id_csc, unique=True)
+        self.cities.coll.create_index(self.cities.column_id_csc, unique=True)
 
     def print_delimiter(self, name: str) -> None:
         print("~"*40)
