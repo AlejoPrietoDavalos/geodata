@@ -1,8 +1,8 @@
 from typing import Tuple, List
 
-from SPARQLWrapper import JSON
+from SPARQLWrapper import QueryResult
 
-from geodata.wikidata.sparql import get_sparql
+from geodata.wikidata.sparql import results_from_query
 from geodata.wikidata._etc import _raise_model_error
 from geodata.db.models.country import Country
 from geodata.db.models.state import State
@@ -72,12 +72,7 @@ def _id_wikidata_from_results(results, model: Country | State | City) -> str | N
     return id_wikidata
 
 def search_id_wikidata(model: Country | State | City) -> Tuple[int, str | None]:
-    query = query_from_model(model)
-    sparql = get_sparql()
-    sparql.setQuery(query)
-    sparql.setReturnFormat(JSON)
-
-    results = sparql.query().convert()
+    results = results_from_query(query=query)
     id_wikidata = _id_wikidata_from_results(results=results, model=model)
     return model.id_csc, id_wikidata
 
@@ -85,16 +80,7 @@ def search_id_wikidata(model: Country | State | City) -> Tuple[int, str | None]:
 def search_websites_and_postal_codes(id_wikidata: str | None) -> Tuple[List[str], List[str]]:
     if id_wikidata is None:
         return [], []
-    sparql = get_sparql()
-    query = f"""
-    SELECT ?website ?postalCode WHERE {{
-      OPTIONAL {{ wd:{id_wikidata} wdt:P856 ?website. }}
-      OPTIONAL {{ wd:{id_wikidata} wdt:P281 ?postalCode. }}
-    }}
-    """
-    sparql.setQuery(query)
-    sparql.setReturnFormat(JSON)
-    results = sparql.query().convert()
+    results = results_from_query(query=query)
 
     websites = []
     postal_codes = []
