@@ -37,6 +37,11 @@ python3 download_id_wikidata.py >> _download_id_wikidata.log
 python3 download_websites_postals.py >> _download_websites_postals.log
 ```
 
+#### Subdivision of States
+- The **CSC API** considers **city** as the smallest subdivision, and **States** as a set of **Cities**.
+- You can see all States categories inside **geodata/db/models/state.py**.
+
+
 #### Config
 - It contains the name of the DB, it can be changed in case you want to perform tests, without having to make backups or migrate.
 - You can change the name and a new DB will be generated from scratch.
