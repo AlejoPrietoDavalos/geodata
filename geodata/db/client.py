@@ -1,7 +1,6 @@
 from typing import Literal
 from functools import cached_property
 from abc import ABC
-import json
 
 from pymongo import MongoClient
 from pymongo.database import Database
@@ -11,8 +10,9 @@ from geodata.csc.downloads import download_csv
 from geodata.db.colls.countries import CountriesColl
 from geodata.db.colls.states import StatesColl
 from geodata.db.colls.cities import CitiesColl
+from geodata.db.config import Cfg
 
-__all__ = ["WorldDataDB", "WORLD_DATA", "COUNTRIES", "STATES", "CITIES", "DB_NAME"]
+__all__ = ["WorldDataDB", "WORLD_DATA", "COUNTRIES", "STATES", "CITIES"]
 
 
 WORLD_DATA = "world_data"
@@ -20,20 +20,12 @@ COUNTRIES = "countries"
 STATES = "states"
 CITIES = "cities"
 
-DB_NAME = "db_name"
-
-
-def read_cfg() -> dict:
-    with open("config.json", "r") as f:
-        cfg = json.load(f)
-    return cfg
-
 
 class BaseWorldDataDB(ABC):
     def __init__(self, mongo_client: MongoClient):
         self._client = mongo_client
-        self._cfg = read_cfg()
-        self._db = self.client[self._cfg[DB_NAME]]
+        self._cfg = Cfg.from_json()
+        self._db = self.client[self._cfg.db_name]
     
     @property
     def client(self) -> MongoClient:
@@ -44,7 +36,7 @@ class BaseWorldDataDB(ABC):
         return self._db
     
     @property
-    def cfg(self) -> dict:
+    def cfg(self) -> Cfg:
         return self._cfg
 
     @cached_property
