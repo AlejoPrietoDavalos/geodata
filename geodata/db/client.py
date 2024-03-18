@@ -1,6 +1,9 @@
 from typing import Literal
 from functools import cached_property
+import os
 from abc import ABC
+from dotenv import load_dotenv
+load_dotenv()
 
 from pymongo import MongoClient
 from pymongo.database import Database
@@ -20,12 +23,13 @@ COUNTRIES = "countries"
 STATES = "states"
 CITIES = "cities"
 
+def _get_mongo_client() -> MongoClient:
+    return MongoClient(host=os.getenv("HOST"), port=int(os.getenv("PORT")))
 
 class BaseWorldDataDB(ABC):
-    def __init__(self, mongo_client: MongoClient):
-        self._client = mongo_client
-        self._cfg = Cfg.from_json()
-        self._db = self.client[self._cfg.db_name]
+    def __init__(self):
+        self._client = _get_mongo_client()
+        self._db = self.client[os.getenv("DB_NAME")]
     
     @property
     def client(self) -> MongoClient:
@@ -34,10 +38,6 @@ class BaseWorldDataDB(ABC):
     @property
     def db(self) -> Database:
         return self._db
-    
-    @property
-    def cfg(self) -> Cfg:
-        return self._cfg
 
     @cached_property
     def countries(self) -> CountriesColl:
@@ -53,8 +53,8 @@ class BaseWorldDataDB(ABC):
 
 
 class WorldDataDB(BaseWorldDataDB):
-    def __init__(self, mongo_client: MongoClient):
-        super().__init__(mongo_client=mongo_client)
+    def __init__(self):
+        super().__init__()
 
     def set_unique_keys(self) -> None:
         self.countries.coll.create_index(self.countries.column_id_csc, unique=True)
