@@ -1,8 +1,9 @@
 from typing import Type, Tuple, List, Literal
-from datetime import datetime
+from datetime import datetime, UTC
 from abc import ABC, abstractproperty
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+import time
 
 from pymongo import errors
 from pymongo.results import UpdateResult
@@ -17,14 +18,14 @@ from geodata.db.models.country import Country
 from geodata.db.models.state import State
 from geodata.db.models.city import City
 
-DEFAULT_WORKERS = 10
+DEFAULT_WORKERS = 5
 COUNTRY_CODE = "country_code"
 CREATED_TIME = "created_time"
 UPDATED_TIME = "updated_time"
 
 
 def datetime_now_str() -> str:
-    return datetime.utcnow().strftime("%Y_%m_%d_%H_%M_%S")
+    return datetime.now(tz=UTC).strftime("%Y_%m_%d_%H_%M_%S")
 
 class BaseRegionColl(ABC):
     def __init__(self, coll: Collection):
@@ -56,7 +57,7 @@ class BaseRegionColl(ABC):
         return self.coll.find({self.column_id_wikidata: None})
 
     def update_id_wikidata(self, id_csc: int, id_wikidata: str) -> UpdateResult:
-        current_time = datetime.utcnow()
+        current_time = datetime.now(tz=UTC)
         result = self.coll.update_one(
             {self.column_id_csc: int(id_csc)},
             {"$set": {self.column_id_wikidata: id_wikidata, UPDATED_TIME: current_time}}
@@ -64,7 +65,7 @@ class BaseRegionColl(ABC):
         return result
 
     def update_websites_postal_codes(self, id_csc: int, websites: List[str], postal_codes: List[str]) -> UpdateResult:
-        current_time = datetime.utcnow()
+        current_time = datetime.now(tz=UTC)
         result = self.coll.update_one(
             {self.column_id_csc: int(id_csc)},
             {"$set": {"websites_wikidata": websites, "postal_codes_wikidata": postal_codes, UPDATED_TIME: current_time}}
@@ -166,7 +167,7 @@ class BaseRegionColl(ABC):
             row_json = json.loads(row.to_json())
             if row[COUNTRY_CODE] is not None:
                 try:
-                    current_time = datetime.utcnow()
+                    current_time = datetime.now(tz=UTC)
                     model_new = self.cls_coll(
                         created_time = current_time,
                         updated_time = current_time,
