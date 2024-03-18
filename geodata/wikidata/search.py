@@ -8,7 +8,8 @@ from geodata.wikidata.querys import (
     query_state_id_wikidata_lang,
     query_city_id_wikidata,
     query_city_id_wikidata_lang,
-    query_websites_and_postal_codes
+    query_websites_and_postal_codes,
+    query_entity_name_in_native_language
 )
 from geodata.wikidata.lang import country_code_to_lang
 from geodata.wikidata.sparql import results_from_query
@@ -88,4 +89,14 @@ def search_websites_and_postal_codes(id_wikidata: str | None) -> Tuple[List[str]
     return websites, postal_codes
 
 
+def get_entity_name_in_native_language(id_wikidata: str | None, language: str) -> str | None:
+    if language == "" or id_wikidata is None:
+        return None
+    query = query_entity_name_in_native_language(id_wikidata, language)
+    results = results_from_query(query=query)
+    if len(results["results"]["bindings"]) > 0:
+        entity_name = results["results"]["bindings"][0]["entityLabel"]["value"]
+    else:
+        entity_name = None
+    return entity_name
 
