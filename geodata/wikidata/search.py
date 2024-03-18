@@ -2,13 +2,23 @@ from typing import Tuple, List
 
 from SPARQLWrapper import QueryResult
 
-from geodata.wikidata.querys import query_id_wikidata_from_model, query_websites_and_postal_codes
+from geodata.wikidata.querys import (
+    query_country_id_wikidata,
+    query_state_id_wikidata,
+    query_state_id_wikidata_lang,
+    query_city_id_wikidata,
+    query_city_id_wikidata_lang,
+    query_websites_and_postal_codes
+)
+from geodata.wikidata.lang import country_code_to_lang
 from geodata.wikidata.sparql import results_from_query
 from geodata.wikidata._etc import _raise_model_error
 from geodata.db.models.country import Country
 from geodata.db.models.state import State
 from geodata.db.models.city import City
 
+def country2lang(country_code: str) -> str:
+    return country_code_to_lang(country_code)
 
 def _get_model_name(model: Country | State | City) -> str:
     """ The API brings the field `country` for countries, and `place` for what we call `state` and `city`."""
@@ -26,11 +36,39 @@ def _id_wikidata_from_results(results: QueryResult.ConvertResult, model: Country
     id_wikidata = None if len(bindings) == 0 else bindings[0][MODEL_NAME]["value"].split('/')[-1]
     return id_wikidata
 
-def search_id_wikidata(model: Country | State | City) -> Tuple[int, str | None]:
-    query = query_id_wikidata_from_model(model)
+def process_query_search_id_wikidata(query: str, model: Country | State | City) -> Tuple[int, str | None]:
     results = results_from_query(query=query)
     id_wikidata = _id_wikidata_from_results(results=results, model=model)
     return model.id_csc, id_wikidata
+
+
+def search_id_wikidata(model: Country | State | City) -> Tuple[int, str | None]:
+    lang = country2lang(model.country_code)
+    if isinstance(model, Country):
+        query = query_country_id_wikidata(model)
+        id_csc, id_wikidata = process_query_search_id_wikidata(query, model)
+    
+    elif isinstance(model, State):
+        query = query_state_id_wikidata(model)
+        id_csc, id_wikidata = process_query_search_id_wikidata(query, model)
+        if id_wikidata is None and lang != "":
+            query = query_state_id_wikidata_lang(model, lang)
+            id_csc, id_wikidata =  process_query_search_id_wikidata(query, model)
+            #if id_wikidata is not None:
+            #    print(f"~~> state_method2: {model.name} | {id_csc} | {id_wikidata}")
+    
+    elif isinstance(model, City):
+        query = query_city_id_wikidata(model)
+        id_csc, id_wikidata = process_query_search_id_wikidata(query, model)
+        if id_wikidata is None and lang != "":
+            query = query_city_id_wikidata_lang(model, lang)
+            id_csc, id_wikidata =  process_query_search_id_wikidata(query, model)
+            #if id_wikidata is not None:
+            #    print(f"~~> city_method2: {model.name} | {id_csc} | {id_wikidata}")
+    else:
+        _raise_model_error()
+    return id_csc, id_wikidata
+
 
 
 def search_websites_and_postal_codes(id_wikidata: str | None) -> Tuple[List[str], List[str]]:
