@@ -15,6 +15,16 @@ class GeoZoneModel(ABC, BaseModel):
     websites_wikidata: List[str] = Field(default_factory=list)
 
     @abstractproperty
+    def name(self) -> str:
+        """ English name of the entity."""
+        ...
+
+    @abstractproperty
+    def name_native(self) -> str | None:
+        """Native name of the entity."""
+        ...
+
+    @abstractproperty
     def id_csc(self) -> int:
         """ Country/State/City id csc."""
         ...

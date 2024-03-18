@@ -19,9 +19,18 @@ StateTypes = Literal[
 class State(GeoZoneModel):
     state_id_csc: int
     state_name: str
-    state_code: Optional[str]
+    state_name_native: Optional[str] = None
+    state_code: Optional[str] = None
     state_type_csc: StateTypes
     state_id_wikidata: Optional[str] = None
+
+    @property
+    def name(self) -> str:
+        return self.state_name
+    
+    @property
+    def name_native(self) -> str | None:
+        return self.state_name_native
 
     @property
     def id_csc(self) -> int:
