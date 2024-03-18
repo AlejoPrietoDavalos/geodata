@@ -13,14 +13,41 @@ def query_country_id_wikidata(country: Country) -> str:
         LIMIT 1
         """
 
+
+
+def query_state_id_wikidata_lang(state: State, language: str) -> str:
+    return f"""
+        SELECT ?place ?placeLabel WHERE {{
+            ?place wdt:P31/wdt:P279* wd:Q10864048;
+                rdfs:label "{state.state_name}"@{language};
+                wdt:P17 ?country.
+            ?country wdt:P297 "{state.country_code}".
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "{language},en". }}
+        }}
+        LIMIT 1
+        """
+
 def query_state_id_wikidata(state: State) -> str:
     return f"""
         SELECT ?place ?placeLabel WHERE {{
             ?place wdt:P31/wdt:P279* wd:Q10864048;
                 rdfs:label "{state.state_name}"@en;
-                wdt:P17 ?country. # Country of the place.
+                wdt:P17 ?country.
             ?country wdt:P297 "{state.country_code}".
             SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+        }}
+        LIMIT 1
+        """
+
+
+def query_city_id_wikidata_lang(city: City, language: str) -> str:
+    return f"""
+        SELECT ?place ?placeLabel WHERE {{
+            ?place wdt:P31/wdt:P279* wd:Q486972;
+                rdfs:label "{city.city_name}"@{language};
+                wdt:P17 ?country.
+            ?country wdt:P297 "{city.country_code}".
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "{language},en". }}
         }}
         LIMIT 1
         """
@@ -37,17 +64,6 @@ def query_city_id_wikidata(city: City) -> str:
         LIMIT 1
         """
 
-
-def query_id_wikidata_from_model(model: Country | State | City) -> str:
-    if isinstance(model, Country):
-        query = query_country_id_wikidata(model)
-    elif isinstance(model, State):
-        query = query_state_id_wikidata(model)
-    elif isinstance(model, City):
-        query = query_city_id_wikidata(model)
-    else:
-        _raise_model_error()
-    return query
 
 
 def query_websites_and_postal_codes(id_wikidata: str) -> str:
