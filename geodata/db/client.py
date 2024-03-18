@@ -79,7 +79,7 @@ class WorldDataDB(BaseWorldDataDB):
         df_cities = download_csv(url=UrlsCSC.cities)
         self.cities.process_df_csc(df_cities, verbose=verbose)
     
-    def download_id_wikidata(self, max_workers: int = 10, verbose: bool = True) -> None:
+    def download_id_wikidata(self, max_workers: int = 5, verbose: bool = True) -> None:
         self.print_delimiter("countries")
         self.countries.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
 
@@ -92,7 +92,7 @@ class WorldDataDB(BaseWorldDataDB):
     def download_websites_postals(
             self,
             mode: Literal["all", "only_empty"] = "all",
-            max_workers: int = 10,
+            max_workers: int = 5,
             verbose: bool = True
         ) -> None:
         self.print_delimiter("countries")
