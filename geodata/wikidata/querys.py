@@ -73,3 +73,14 @@ def query_websites_and_postal_codes(id_wikidata: str) -> str:
         OPTIONAL {{ wd:{id_wikidata} wdt:P281 ?postalCode. }}
         }}
         """
+
+
+def query_entity_name_in_native_language(id_wikidata: str, language: str) -> str:
+    return f"""
+        SELECT ?entity ?entityLabel WHERE {{
+            wd:{id_wikidata} rdfs:label ?entity_label.
+            FILTER(LANG(?entity_label) = "{language}")
+            BIND(?entity_label AS ?entity)
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],{language}". }}
+        }}
+        """
