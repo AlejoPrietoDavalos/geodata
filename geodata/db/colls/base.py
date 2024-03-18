@@ -73,7 +73,21 @@ class BaseRegionColl(ABC):
         return result
 
     def search_id_wikidata(self, model: Country | State | City, verbose: bool = True) -> Tuple[int, str | None]:
-        id_csc, id_wikidata = search_id_wikidata(model)
+        executed_complete = False
+        tries = 0
+        while not executed_complete:
+            try:
+                id_csc, id_wikidata = search_id_wikidata(model)
+                executed_complete = True
+            except Exception as e:
+                print("~"*40)
+                print(f"ERROR - {model.name} - TIMEOUT 60 SECONDS")
+                #print(f"{e}")
+                print("~"*40)
+                tries += 1
+                if tries == 3:
+                    return model.id_csc, None
+                time.sleep(60)
 
         if id_wikidata is not None:
             self.update_id_wikidata(id_csc, id_wikidata)
@@ -92,7 +106,7 @@ class BaseRegionColl(ABC):
                 if verbose:
                     print(f"{i}/{num_docs}")
 
-    def search_websites_and_postal_codes(
+    def _search_websites_and_postal_codes(
             self,
             model: Country | State | City,
             mode: Literal["all", "only_empty"] = "all",
@@ -119,6 +133,29 @@ class BaseRegionColl(ABC):
                 print(f"id_csc={model.id_csc} | websites_wikidata={model.websites_wikidata} | postal_codes_wikidata={model.postal_codes_wikidata}")
         return websites, postal_codes
 
+    def search_websites_and_postal_codes(
+            self,
+            model: Country | State | City,
+            mode: Literal["all", "only_empty"] = "all",
+            verbose: bool = True
+        ) -> Tuple[List[str], List[str]]:
+        executed_complete = False
+        tries = 0
+        while not executed_complete:
+            try:
+                websites, postal_codes = self._search_websites_and_postal_codes(model=model, mode=mode, verbose=verbose)
+                executed_complete = True
+            except Exception as e:
+                print("~"*40)
+                print(f"ERROR - {model.name} - TIMEOUT 60 SECONDS")
+                #print(f"{e}")
+                print("~"*40)
+                tries += 1
+                if tries == 3:
+                    return [], []
+                time.sleep(60)
+        return websites, postal_codes
+    
     def search_all_websites_and_postal_codes(
             self,
             mode: Literal["all", "only_empty"] = "all",
