@@ -21,6 +21,16 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
+## Make .env
+```bash
+# Inside `.env`.
+DB_NAME=world_data
+HOST=localhost
+PORT=27017
+USERNAME=my_username
+PASSWORD=my_password
+```
+
 ## How to use.
 - The following scripts can be run in any order or skipping some.
 - It is suggested to do it in the marked order for an optimized download.
