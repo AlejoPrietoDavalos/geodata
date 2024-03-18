@@ -1,4 +1,4 @@
-def country_code_to_lang(country_code: str = "") -> dict:
+def country_code_to_lang(country_code: str) -> str:
     dict_country_code = {
         "AF": "ps",
         "AX": "sv",
