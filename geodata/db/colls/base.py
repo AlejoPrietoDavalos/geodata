@@ -118,7 +118,6 @@ class BaseRegionColl(ABC):
             except Exception as e:
                 print("~"*40)
                 print(f"ERROR - {model.name} - TIMEOUT 60 SECONDS")
-                #print(f"{e}")
                 print("~"*40)
                 tries += 1
                 if tries == 3:
@@ -278,7 +277,7 @@ class BaseRegionColl(ABC):
         with open(f"{self.name_singular}_broken_{date_now_str}.json", "w") as f:
             json.dump(csc_broken, f)
 
-    def search_name_native_and_english(self, model: Country | State | City) -> None:
+    def search_name_native_and_english(self, model: Country | State | City, verbose: bool = True) -> None:
         lang = country_code_to_lang(model.country_code)
         if model.id_wikidata is not None and lang != "":
             name_native = search_name_native(model.id_wikidata, lang) if model.name_native is None else None
@@ -299,10 +298,20 @@ class BaseRegionColl(ABC):
                 name_english = name_english
             )
 
-            msg = [f"id_csc={model.id_csc}"]
-            if name_native is not None:
-                msg.append(f"name_native={name_native}")
-            if name_english is not None:
-                msg.append(f"name_english={name_english}")
-            msg = " | ".join(msg)
-            print(msg)
+            if verbose:
+                msg = [f"id_csc={model.id_csc}"]
+                if name_native is not None:
+                    msg.append(f"name_native={name_native}")
+                if name_english is not None:
+                    msg.append(f"name_english={name_english}")
+                msg = " | ".join(msg)
+                print(msg)
+
+    def search_all_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+        num_docs = sum(1 for _ in self.coll.find({}))
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            iter_futures = (pool.submit(self.search_name_native_and_english, model, verbose) for model in self.iter_models())
+            for i, future in enumerate(as_completed(iter_futures), start=1):
+                future.result()
+                if verbose:
+                    print(f"{i}/{num_docs}")

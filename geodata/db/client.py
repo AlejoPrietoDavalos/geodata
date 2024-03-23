@@ -79,7 +79,7 @@ class WorldDataDB(BaseWorldDataDB):
         df_cities = download_csv(url=UrlsCSC.cities)
         self.cities.process_df_csc(df_cities, verbose=verbose)
     
-    def download_id_wikidata(self, max_workers: int = 5, verbose: bool = True) -> None:
+    def download_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
         self.print_delimiter("countries")
         self.countries.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
 
@@ -92,7 +92,7 @@ class WorldDataDB(BaseWorldDataDB):
     def download_websites_postals(
             self,
             mode: Literal["all", "only_empty"] = "all",
-            max_workers: int = 5,
+            max_workers: int = DEFAULT_WORKERS,
             verbose: bool = True
         ) -> None:
         self.print_delimiter("countries")
@@ -103,3 +103,13 @@ class WorldDataDB(BaseWorldDataDB):
 
         self.print_delimiter("cities")
         self.cities.search_all_websites_and_postal_codes(mode=mode, max_workers=max_workers, verbose=verbose)
+    
+    def download_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+        self.print_delimiter("countries")
+        self.countries.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose)
+        
+        self.print_delimiter("states")
+        self.states.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose)
+
+        self.print_delimiter("cities")
+        self.cities.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose)
