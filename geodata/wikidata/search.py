@@ -1,4 +1,5 @@
 from typing import Tuple, List
+import time
 
 from SPARQLWrapper import QueryResult
 
@@ -9,7 +10,8 @@ from geodata.wikidata.querys import (
     query_city_id_wikidata,
     query_city_id_wikidata_lang,
     query_websites_and_postal_codes,
-    query_entity_name_in_native_language
+    query_name_native,
+    query_name_english
 )
 from geodata.wikidata.lang import country_code_to_lang
 from geodata.wikidata.sparql import results_from_query
@@ -55,8 +57,6 @@ def search_id_wikidata(model: Country | State | City) -> Tuple[int, str | None]:
         if id_wikidata is None and lang != "":
             query = query_state_id_wikidata_lang(model, lang)
             id_csc, id_wikidata =  process_query_search_id_wikidata(query, model)
-            #if id_wikidata is not None:
-            #    print(f"~~> state_method2: {model.name} | {id_csc} | {id_wikidata}")
     
     elif isinstance(model, City):
         query = query_city_id_wikidata(model)
@@ -64,8 +64,6 @@ def search_id_wikidata(model: Country | State | City) -> Tuple[int, str | None]:
         if id_wikidata is None and lang != "":
             query = query_city_id_wikidata_lang(model, lang)
             id_csc, id_wikidata =  process_query_search_id_wikidata(query, model)
-            #if id_wikidata is not None:
-            #    print(f"~~> city_method2: {model.name} | {id_csc} | {id_wikidata}")
     else:
         _raise_model_error()
     return id_csc, id_wikidata
@@ -89,14 +87,64 @@ def search_websites_and_postal_codes(id_wikidata: str | None) -> Tuple[List[str]
     return websites, postal_codes
 
 
-def get_entity_name_in_native_language(id_wikidata: str | None, language: str) -> str | None:
-    if language == "" or id_wikidata is None:
+
+def search_name_native(id_wikidata: str | None, lang: str) -> str | None:
+    executed_complete = False
+    tries = 0
+    while not executed_complete:
+        try:
+            name_native = _search_name_native(id_wikidata=id_wikidata, lang=lang)
+            executed_complete = True
+        except Exception as e:
+            tries += 1
+            if tries == 3:
+                name_native = None
+                executed_complete = True
+            else:
+                print("~"*40)
+                print(f"ERROR - {id_wikidata} - TIMEOUT 60 SECONDS")
+                print("~"*40)
+                time.sleep(60)
+    return name_native
+
+def search_name_english(id_wikidata: str | None) -> str | None:
+    executed_complete = False
+    tries = 0
+    while not executed_complete:
+        try:
+            name_english = _search_name_english(id_wikidata=id_wikidata)
+            executed_complete = True
+        except Exception as e:
+            tries += 1
+            if tries == 3:
+                name_english = None
+                executed_complete = True
+            else:
+                print("~"*40)
+                print(f"ERROR - {id_wikidata} - TIMEOUT 60 SECONDS")
+                print("~"*40)
+                time.sleep(60)
+    return name_english
+
+def _search_name_native(id_wikidata: str | None, lang: str) -> str | None:
+    if lang == "" or id_wikidata is None:
         return None
-    query = query_entity_name_in_native_language(id_wikidata, language)
+    query = query_name_native(id_wikidata, lang)
     results = results_from_query(query=query)
     if len(results["results"]["bindings"]) > 0:
-        entity_name = results["results"]["bindings"][0]["entityLabel"]["value"]
+        name_native = results["results"]["bindings"][0]["entityLabel"]["value"]
     else:
-        entity_name = None
-    return entity_name
+        name_native = None
+    return name_native
+
+def _search_name_english(id_wikidata: str | None) -> str | None:
+    if id_wikidata is None:
+        return None
+    query = query_name_english(id_wikidata)
+    results = results_from_query(query=query)
+    if len(results["results"]["bindings"]) > 0:
+        name_english = results["results"]["bindings"][0]["entityLabel"]["value"]
+    else:
+        name_english = None
+    return name_english
 

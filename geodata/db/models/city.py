@@ -7,6 +7,7 @@ class City(GeoZoneModel):
     state_id_csc: int
     city_name: str
     city_name_native: Optional[str] = None
+    city_name_english: Optional[str] = None
     state_code: Optional[str] = None
     city_id_wikidata: Optional[str] = None
     
@@ -18,6 +19,11 @@ class City(GeoZoneModel):
     def name_native(self) -> str | None:
         return self.city_name_native
 
+    @property
+    def name_english(self) -> str | None:
+        """ English name of the entity."""
+        return self.city_name_english
+    
     @property
     def id_csc(self) -> int:
         return self.city_id_csc

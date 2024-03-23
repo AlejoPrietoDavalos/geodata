@@ -6,6 +6,7 @@ class Country(GeoZoneModel):
     region_id_csc: int
     country_name: str
     country_name_native: Optional[str] = None
+    country_name_english: Optional[str] = None
     phone_code: str
     country_id_wikidata: Optional[str] = None
     
@@ -16,7 +17,12 @@ class Country(GeoZoneModel):
     @property
     def name_native(self) -> str | None:
         return self.country_name_native
-    
+
+    @property
+    def name_english(self) -> str | None:
+        """ English name of the entity."""
+        return self.country_name_english
+
     @property
     def id_csc(self) -> int:
         return self.country_id_csc

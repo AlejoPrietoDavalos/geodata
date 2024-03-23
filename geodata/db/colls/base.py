@@ -1,4 +1,4 @@
-from typing import Type, Tuple, List, Literal
+from typing import Type, Tuple, List, Literal, Generator
 from datetime import datetime, UTC
 from abc import ABC, abstractproperty
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -12,7 +12,13 @@ from pymongo.cursor import Cursor
 import numpy as np
 import pandas as pd
 
-from geodata.wikidata.search import search_id_wikidata, search_websites_and_postal_codes
+from geodata.wikidata.search import (
+    search_id_wikidata,
+    search_websites_and_postal_codes,
+    country_code_to_lang,
+    search_name_native,
+    search_name_english
+)
 from geodata.db.models.base import GeoZoneModel
 from geodata.db.models.country import Country
 from geodata.db.models.state import State
@@ -22,7 +28,8 @@ DEFAULT_WORKERS = 5
 COUNTRY_CODE = "country_code"
 CREATED_TIME = "created_time"
 UPDATED_TIME = "updated_time"
-
+WEBSITES_WIKIDATA = "websites_wikidata"
+POSTAL_CODES_WIKIDATA = "postal_codes_wikidata"
 
 def datetime_now_str() -> str:
     return datetime.now(tz=UTC).strftime("%Y_%m_%d_%H_%M_%S")
@@ -52,24 +59,53 @@ class BaseRegionColl(ABC):
     @property
     def column_id_csc(self) -> str:
         return f"{self.name_singular}_id_csc"
-    
+
+    @property
+    def column_name_native(self) -> str:
+        return f"{self.name_singular}_name_native"
+
+    @property
+    def column_name_english(self) -> str:
+        return f"{self.name_singular}_name_english"
+
+    def iter_models(self) -> Generator[Country | State | City, None, None]:
+        return (self.cls_coll(**model_doc) for model_doc in self.coll.find({}))
+
+
     def find_id_wikidata_none(self) -> Cursor:
         return self.coll.find({self.column_id_wikidata: None})
 
-    def update_id_wikidata(self, id_csc: int, id_wikidata: str) -> UpdateResult:
+    def add_updated_time_to_set(self, dict2set: dict) -> dict:
         current_time = datetime.now(tz=UTC)
-        result = self.coll.update_one(
-            {self.column_id_csc: int(id_csc)},
-            {"$set": {self.column_id_wikidata: id_wikidata, UPDATED_TIME: current_time}}
-        )
+        dict2set[UPDATED_TIME] = current_time
+        return dict2set
+
+    def update_one_by_id_csc(self, id_csc: int, dict2set: dict) -> UpdateResult:
+        return self.coll.update_one({self.column_id_csc: int(id_csc)}, {"$set": dict2set})
+
+    def update_id_wikidata(self, id_csc: int, id_wikidata: str) -> UpdateResult:
+        dict2set = {self.column_id_wikidata: id_wikidata}
+        dict2set = self.add_updated_time_to_set(dict2set)
+        result = self.update_one_by_id_csc(id_csc=id_csc, dict2set=dict2set)
         return result
 
     def update_websites_postal_codes(self, id_csc: int, websites: List[str], postal_codes: List[str]) -> UpdateResult:
-        current_time = datetime.now(tz=UTC)
-        result = self.coll.update_one(
-            {self.column_id_csc: int(id_csc)},
-            {"$set": {"websites_wikidata": websites, "postal_codes_wikidata": postal_codes, UPDATED_TIME: current_time}}
-        )
+        dict2set = {WEBSITES_WIKIDATA: websites, POSTAL_CODES_WIKIDATA: postal_codes}
+        dict2set = self.add_updated_time_to_set(dict2set)
+        result = self.update_one_by_id_csc(id_csc=id_csc, dict2set=dict2set)
+        return result
+
+    def update_name_native_and_english(self, id_csc: int, name_native: str | None, name_english: str | None) -> UpdateResult:
+        assert name_native is not None or name_english is not None, "They cannot be both None at the same time."
+        
+        dict2set = {}
+        if name_native is not None:
+            dict2set[self.column_name_native] = name_native
+        if name_english is not None:
+            dict2set[self.column_name_english] = name_english
+        
+        dict2set = self.add_updated_time_to_set(dict2set)
+        result = self.update_one_by_id_csc(id_csc=id_csc, dict2set=dict2set)
         return result
 
     def search_id_wikidata(self, model: Country | State | City, verbose: bool = True) -> Tuple[int, str | None]:
@@ -241,3 +277,32 @@ class BaseRegionColl(ABC):
         date_now_str = datetime_now_str()
         with open(f"{self.name_singular}_broken_{date_now_str}.json", "w") as f:
             json.dump(csc_broken, f)
+
+    def search_name_native_and_english(self, model: Country | State | City) -> None:
+        lang = country_code_to_lang(model.country_code)
+        if model.id_wikidata is not None and lang != "":
+            name_native = search_name_native(model.id_wikidata, lang) if model.name_native is None else None
+        else:
+            name_native = None
+        
+        time.sleep(1)
+
+        if model.id_wikidata is not None:
+            name_english = search_name_english(model.id_wikidata) if model.name_english is None else None
+        else:
+            name_english = None
+        
+        if name_native is not None or name_english is not None:
+            result = self.update_name_native_and_english(
+                id_csc = model.id_csc,
+                name_native = name_native,
+                name_english = name_english
+            )
+
+            msg = [f"id_csc={model.id_csc}"]
+            if name_native is not None:
+                msg.append(f"name_native={name_native}")
+            if name_english is not None:
+                msg.append(f"name_english={name_english}")
+            msg = " | ".join(msg)
+            print(msg)

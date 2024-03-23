@@ -1,6 +1,5 @@
 from SPARQLWrapper import SPARQLWrapper, QueryResult, JSON
 
-
 def url_wikidata_sparql() -> str:
     return "https://query.wikidata.org/sparql"
 

@@ -1,4 +1,3 @@
-from geodata.wikidata._etc import _raise_model_error
 from geodata.db.models.country import Country
 from geodata.db.models.state import State
 from geodata.db.models.city import City
@@ -74,13 +73,22 @@ def query_websites_and_postal_codes(id_wikidata: str) -> str:
         }}
         """
 
-
-def query_entity_name_in_native_language(id_wikidata: str, language: str) -> str:
+def query_name_native(id_wikidata: str, lang: str) -> str:
     return f"""
         SELECT ?entity ?entityLabel WHERE {{
             wd:{id_wikidata} rdfs:label ?entity_label.
-            FILTER(LANG(?entity_label) = "{language}")
+            FILTER(LANG(?entity_label) = "{lang}")
             BIND(?entity_label AS ?entity)
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],{language}". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],{lang}". }}
+        }}
+        """
+
+def query_name_english(id_wikidata: str) -> str:
+    return f"""
+        SELECT ?entity ?entityLabel WHERE {{
+            wd:{id_wikidata} rdfs:label ?entity_label.
+            FILTER(LANG(?entity_label) = "en")
+            BIND(?entity_label AS ?entity)
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
         }}
         """

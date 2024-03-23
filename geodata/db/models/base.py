@@ -16,12 +16,17 @@ class GeoZoneModel(ABC, BaseModel):
 
     @abstractproperty
     def name(self) -> str:
-        """ English name of the entity."""
+        """ CSC name of the entity. Sometimes English, sometimes not."""
         ...
 
     @abstractproperty
     def name_native(self) -> str | None:
-        """Native name of the entity."""
+        """ Native name of the entity."""
+        ...
+
+    @abstractproperty
+    def name_english(self) -> str | None:
+        """ English name of the entity."""
         ...
 
     @abstractproperty
