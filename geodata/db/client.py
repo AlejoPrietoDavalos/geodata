@@ -13,7 +13,7 @@ from geodata.csc.downloads import download_csv
 from geodata.db.colls.countries import CountriesColl
 from geodata.db.colls.states import StatesColl
 from geodata.db.colls.cities import CitiesColl
-from geodata.db.config import Cfg
+from geodata.db.colls.base import DEFAULT_WORKERS
 
 __all__ = ["WorldDataDB", "WORLD_DATA", "COUNTRIES", "STATES", "CITIES"]
 
