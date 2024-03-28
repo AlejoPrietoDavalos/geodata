@@ -1,4 +1,8 @@
 from SPARQLWrapper import SPARQLWrapper, QueryResult, JSON
+from fake_useragent import UserAgent
+
+def random_user_agent() -> UserAgent:
+    return UserAgent().random
 
 def url_wikidata_sparql() -> str:
     return "https://query.wikidata.org/sparql"
@@ -10,5 +14,6 @@ def results_from_query(query: str) -> QueryResult.ConvertResult:
     sparql = get_sparql()
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
+    sparql.addCustomHttpHeader("User-Agent", random_user_agent())
     results: QueryResult.ConvertResult = sparql.query().convert()
     return results
