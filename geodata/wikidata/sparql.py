@@ -1,8 +1,6 @@
 from SPARQLWrapper import SPARQLWrapper, QueryResult, JSON
-from fake_useragent import UserAgent
 
-def random_user_agent() -> UserAgent:
-    return UserAgent().random
+from geodata.utils import random_user_agent
 
 def url_wikidata_sparql() -> str:
     return "https://query.wikidata.org/sparql"

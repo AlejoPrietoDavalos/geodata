@@ -14,3 +14,6 @@ class CountriesColl(BaseRegionColl):
     @property
     def cls_coll(self) -> Country:
         return Country
+    
+    def search_all_postals_wikipedia(self, *args, **kwargs) -> None:
+        raise NotImplementedError("The countries have no apparent postal code.")

@@ -89,20 +89,15 @@ class WorldDataDB(BaseWorldDataDB):
         self.print_delimiter("cities")
         self.cities.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
 
-    def download_websites_postals(
-            self,
-            mode: Literal["all", "only_empty"] = "all",
-            max_workers: int = DEFAULT_WORKERS,
-            verbose: bool = True
-        ) -> None:
+    def download_websites_postals(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
         self.print_delimiter("countries")
-        self.countries.search_all_websites_and_postal_codes(mode=mode, max_workers=max_workers, verbose=verbose)
+        self.countries.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose)
 
         self.print_delimiter("states")
-        self.states.search_all_websites_and_postal_codes(mode=mode, max_workers=max_workers, verbose=verbose)
+        self.states.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose)
 
         self.print_delimiter("cities")
-        self.cities.search_all_websites_and_postal_codes(mode=mode, max_workers=max_workers, verbose=verbose)
+        self.cities.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose)
     
     def download_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
         self.print_delimiter("countries")
@@ -113,3 +108,17 @@ class WorldDataDB(BaseWorldDataDB):
 
         self.print_delimiter("cities")
         self.cities.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose)
+
+    def download_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+        self.print_delimiter("states")
+        self.states.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose)
+
+        self.print_delimiter("cities")
+        self.cities.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose)
+
+    def postprocess_postals_wikipedia(self, verbose: bool = True) -> None:
+        self.print_delimiter("states")
+        self.states.postprocess_all_postal_codes_wikipedia(verbose=verbose)
+
+        self.print_delimiter("cities")
+        self.cities.postprocess_all_postal_codes_wikipedia(verbose=verbose)

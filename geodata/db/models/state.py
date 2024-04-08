@@ -1,4 +1,6 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, List
+
+from pydantic import Field
 
 from geodata.db.models.base import GeoZoneModel
 
@@ -24,6 +26,8 @@ class State(GeoZoneModel):
     state_code: Optional[str] = None
     state_type_csc: StateTypes
     state_id_wikidata: Optional[str] = None
+    postal_codes_wikipedia: List[str] = Field(default_factory=list)
+    postal_codes_wikipedia_clean: List[str] = Field(default_factory=list)
 
     @property
     def name(self) -> str:
