@@ -23,6 +23,8 @@ from geodata.db.models.base import GeoZoneModel
 from geodata.db.models.country import Country
 from geodata.db.models.state import State
 from geodata.db.models.city import City
+from geodata.wikipedia.postal_wikipedia import get_postal_codes_from_wikipedia
+from geodata.wikipedia.process_postals.utils import postprocess_postal_codes_wikipedia
 
 DEFAULT_WORKERS = 5
 COUNTRY_CODE = "country_code"
@@ -30,6 +32,8 @@ CREATED_TIME = "created_time"
 UPDATED_TIME = "updated_time"
 WEBSITES_WIKIDATA = "websites_wikidata"
 POSTAL_CODES_WIKIDATA = "postal_codes_wikidata"
+POSTAL_CODES_WIKIPEDIA = "postal_codes_wikipedia"
+POSTAL_CODES_WIKIPEDIA_CLEAN = "postal_codes_wikipedia_clean"
 
 def datetime_now_str() -> str:
     return datetime.now(tz=UTC).strftime("%Y_%m_%d_%H_%M_%S")
@@ -108,6 +112,18 @@ class BaseRegionColl(ABC):
         result = self.update_one_by_id_csc(id_csc=id_csc, dict2set=dict2set)
         return result
 
+    def update_postal_codes_wikipedia(self, id_csc: int, postal_codes: List[str]) -> UpdateResult:
+        dict2set = {POSTAL_CODES_WIKIPEDIA: postal_codes}
+        dict2set = self.add_updated_time_to_set(dict2set)
+        result = self.update_one_by_id_csc(id_csc=id_csc, dict2set=dict2set)
+        return result
+    
+    def update_postal_codes_wikipedia_clean(self, id_csc: int, postal_codes_clean: List[str]) -> UpdateResult:
+        dict2set = {POSTAL_CODES_WIKIPEDIA_CLEAN: postal_codes_clean}
+        dict2set = self.add_updated_time_to_set(dict2set)
+        result = self.update_one_by_id_csc(id_csc=id_csc, dict2set=dict2set)
+        return result
+
     def search_id_wikidata(self, model: Country | State | City, verbose: bool = True) -> Tuple[int, str | None]:
         executed_complete = False
         tries = 0
@@ -141,21 +157,8 @@ class BaseRegionColl(ABC):
                 if verbose:
                     print(f"{i}/{num_docs}")
 
-    def _search_websites_and_postal_codes(
-            self,
-            model: Country | State | City,
-            mode: Literal["all", "only_empty"] = "all",
-            verbose: bool = True
-        ) -> Tuple[List[str], List[str]]:
-        if mode == "all":
-            websites, postal_codes = search_websites_and_postal_codes(model.id_wikidata)
-        elif mode == "only_empty":
-            if len(model.websites_wikidata) == 0 or len(model.postal_codes_wikidata) == 0:
-                websites, postal_codes = search_websites_and_postal_codes(model.id_wikidata)
-            else:
-                websites, postal_codes = [], []
-        else:
-            raise ValueError("`mode` incorrect.")
+    def _search_websites_and_postal_codes(self, model: Country | State | City, verbose: bool = True) -> Tuple[List[str], List[str]]:
+        websites, postal_codes = search_websites_and_postal_codes(model.id_wikidata)
         
         websites = list(np.unique([w for w in websites if w not in model.websites_wikidata]))
         postal_codes = list(np.unique([p for p in postal_codes if p not in model.postal_codes_wikidata]))
@@ -168,17 +171,12 @@ class BaseRegionColl(ABC):
                 print(f"id_csc={model.id_csc} | websites_wikidata={model.websites_wikidata} | postal_codes_wikidata={model.postal_codes_wikidata}")
         return websites, postal_codes
 
-    def search_websites_and_postal_codes(
-            self,
-            model: Country | State | City,
-            mode: Literal["all", "only_empty"] = "all",
-            verbose: bool = True
-        ) -> Tuple[List[str], List[str]]:
+    def search_websites_and_postal_codes(self, model: Country | State | City, verbose: bool = True) -> Tuple[List[str], List[str]]:
         executed_complete = False
         tries = 0
         while not executed_complete:
             try:
-                websites, postal_codes = self._search_websites_and_postal_codes(model=model, mode=mode, verbose=verbose)
+                websites, postal_codes = self._search_websites_and_postal_codes(model=model, verbose=verbose)
                 executed_complete = True
             except Exception as e:
                 print("~"*40)
@@ -191,19 +189,11 @@ class BaseRegionColl(ABC):
                 time.sleep(60)
         return websites, postal_codes
     
-    def search_all_websites_and_postal_codes(
-            self,
-            mode: Literal["all", "only_empty"] = "all",
-            max_workers: int = DEFAULT_WORKERS,
-            verbose: bool = True
-        ) -> None:
-        if mode not in ["all", "only_empty"]:
-            raise ValueError("`mode` incorrect.")
-        
+    def search_all_websites_and_postal_codes(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
         num_docs = sum(1 for _ in self.coll.find({}))
 
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            iter_futures = (pool.submit(self.search_websites_and_postal_codes, self.cls_coll(**doc), mode, verbose) for doc in self.coll.find({}))
+            iter_futures = (pool.submit(self.search_websites_and_postal_codes, self.cls_coll(**doc), verbose) for doc in self.coll.find({}))
             for i, future in enumerate(as_completed(iter_futures), start=1):
                 websites, postal_codes = future.result()
                 if verbose:
@@ -313,5 +303,64 @@ class BaseRegionColl(ABC):
             iter_futures = (pool.submit(self.search_name_native_and_english, model, verbose) for model in self.iter_models())
             for i, future in enumerate(as_completed(iter_futures), start=1):
                 future.result()
+                if verbose:
+                    print(f"{i}/{num_docs}")
+
+    def postprocess_postal_codes_wikipedia(self, model: State | City, verbose: bool = True) -> List[str]:
+        postal_codes_clean = postprocess_postal_codes_wikipedia(model)
+        
+        is_updated = False
+        for postal in postal_codes_clean:
+            if postal not in model.postal_codes_wikipedia_clean:
+                model.postal_codes_wikipedia_clean.append(postal)
+                is_updated = True
+        
+        if is_updated:
+            self.update_postal_codes_wikipedia_clean(model.id_csc, model.postal_codes_wikipedia_clean)
+            if verbose:
+                print(f"id_csc={model.id_csc} | postal_codes_wikipedia_clean={model.postal_codes_wikipedia_clean}")
+
+    def postprocess_all_postal_codes_wikipedia(self, verbose: bool = True) -> List[str]:
+        num_docs = sum(1 for _ in self.coll.find({}))
+
+        for i, model in enumerate(self.iter_models(), start=1):
+            self.postprocess_postal_codes_wikipedia(model=model, verbose=verbose)
+            print(f"{i}/{num_docs}")
+
+    def _search_postals_wikipedia(self, model: Country | State | City, verbose: bool = True) -> List[str]:
+        postal_codes = get_postal_codes_from_wikipedia(id_wikidata=model.id_wikidata)
+        postal_codes = list(np.unique([p for p in postal_codes if p not in model.postal_codes_wikipedia]))
+        
+        if len(postal_codes) != 0:
+            model.postal_codes_wikipedia.extend(postal_codes)
+            self.update_postal_codes_wikipedia(model.id_csc, model.postal_codes_wikipedia)
+            if verbose:
+                print(f"id_csc={model.id_csc} | postal_codes_wikipedia={model.postal_codes_wikipedia}")
+        return postal_codes
+
+    def search_postals_wikipedia(self, model: State | City, verbose: bool = True) -> List[str]:
+        executed_complete = False
+        tries = 0
+        while not executed_complete:
+            try:
+                postal_codes = self._search_postals_wikipedia(model=model, verbose=verbose)
+                executed_complete = True
+            except Exception as e:
+                print("~"*40)
+                print(f"ERROR - {model.name} - TIMEOUT 60 SECONDS")
+                #print(f"{e}")
+                print("~"*40)
+                tries += 1
+                if tries == 3:
+                    return []
+                time.sleep(60)
+        return postal_codes
+
+    def search_all_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+        num_docs = sum(1 for _ in self.coll.find({}))
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            iter_futures = (pool.submit(self.search_postals_wikipedia, model, verbose) for model in self.iter_models())
+            for i, future in enumerate(as_completed(iter_futures), start=1):
+                postal_codes = future.result()
                 if verbose:
                     print(f"{i}/{num_docs}")
