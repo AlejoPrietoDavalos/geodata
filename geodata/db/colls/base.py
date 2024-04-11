@@ -146,14 +146,20 @@ class BaseRegionColl(ABC):
                 print(f"Updated: {self.column_id_csc}={id_csc} | {self.column_id_wikidata}={id_wikidata}")
         return id_csc, id_wikidata
 
-    def search_all_none_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+    def search_all_none_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
         num_docs = sum(1 for _ in self.find_id_wikidata_none())
 
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            iter_futures = (pool.submit(self.search_id_wikidata, self.cls_coll(**doc), verbose) for doc in self.find_id_wikidata_none())
-            
-            for i, future in enumerate(as_completed(iter_futures), start=1):
-                id_csc, id_wikidata = future.result()
+        if with_concurrent:
+            with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                iter_futures = (pool.submit(self.search_id_wikidata, self.cls_coll(**doc), verbose) for doc in self.find_id_wikidata_none())
+                
+                for i, future in enumerate(as_completed(iter_futures), start=1):
+                    id_csc, id_wikidata = future.result()
+                    if verbose:
+                        print(f"{i}/{num_docs}")
+        else:
+            for i, doc in enumerate(self.find_id_wikidata_none(), start=1):
+                id_csc, id_wikidata = self.search_id_wikidata(self.cls_coll(**doc), verbose)
                 if verbose:
                     print(f"{i}/{num_docs}")
 
@@ -189,13 +195,19 @@ class BaseRegionColl(ABC):
                 time.sleep(60)
         return websites, postal_codes
     
-    def search_all_websites_and_postal_codes(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+    def search_all_websites_and_postal_codes(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
         num_docs = sum(1 for _ in self.coll.find({}))
 
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            iter_futures = (pool.submit(self.search_websites_and_postal_codes, self.cls_coll(**doc), verbose) for doc in self.coll.find({}))
-            for i, future in enumerate(as_completed(iter_futures), start=1):
-                websites, postal_codes = future.result()
+        if with_concurrent:
+            with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                iter_futures = (pool.submit(self.search_websites_and_postal_codes, self.cls_coll(**doc), verbose) for doc in self.coll.find({}))
+                for i, future in enumerate(as_completed(iter_futures), start=1):
+                    websites, postal_codes = future.result()
+                    if verbose:
+                        print(f"{i}/{num_docs}")
+        else:
+            for doc in enumerate(self.coll.find({}), start=1):
+                websites, postal_codes = self.search_websites_and_postal_codes(self.cls_coll(**doc), verbose)
                 if verbose:
                     print(f"{i}/{num_docs}")
 
@@ -297,12 +309,19 @@ class BaseRegionColl(ABC):
                 msg = " | ".join(msg)
                 print(msg)
 
-    def search_all_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+    def search_all_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
         num_docs = sum(1 for _ in self.coll.find({}))
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            iter_futures = (pool.submit(self.search_name_native_and_english, model, verbose) for model in self.iter_models())
-            for i, future in enumerate(as_completed(iter_futures), start=1):
-                future.result()
+
+        if with_concurrent:
+            with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                iter_futures = (pool.submit(self.search_name_native_and_english, model, verbose) for model in self.iter_models())
+                for i, future in enumerate(as_completed(iter_futures), start=1):
+                    future.result()
+                    if verbose:
+                        print(f"{i}/{num_docs}")
+        else:
+            for i, model in enumerate(self.iter_models(), start=1):
+                self.search_name_native_and_english(model=model, verbose=verbose)
                 if verbose:
                     print(f"{i}/{num_docs}")
 
@@ -356,11 +375,18 @@ class BaseRegionColl(ABC):
                 time.sleep(60)
         return postal_codes
 
-    def search_all_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+    def search_all_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
         num_docs = sum(1 for _ in self.coll.find({}))
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            iter_futures = (pool.submit(self.search_postals_wikipedia, model, verbose) for model in self.iter_models())
-            for i, future in enumerate(as_completed(iter_futures), start=1):
-                postal_codes = future.result()
+        
+        if with_concurrent:
+            with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                iter_futures = (pool.submit(self.search_postals_wikipedia, model, verbose) for model in self.iter_models())
+                for i, future in enumerate(as_completed(iter_futures), start=1):
+                    postal_codes = future.result()
+                    if verbose:
+                        print(f"{i}/{num_docs}")
+        else:
+            for i, model in enumerate(self.iter_models(), start=1):
+                postal_codes = self.search_postals_wikipedia(model=model, verbose=verbose)
                 if verbose:
                     print(f"{i}/{num_docs}")

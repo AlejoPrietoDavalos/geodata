@@ -79,42 +79,42 @@ class WorldDataDB(BaseWorldDataDB):
         df_cities = download_csv(url=UrlsCSC.cities)
         self.cities.process_df_csc(df_cities, verbose=verbose)
     
-    def download_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+    def download_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
         self.print_delimiter("countries")
-        self.countries.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
+        self.countries.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
         self.print_delimiter("states")
-        self.states.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
+        self.states.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
         self.print_delimiter("cities")
-        self.cities.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose)
+        self.cities.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
-    def download_websites_postals(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+    def download_websites_postals(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
         self.print_delimiter("countries")
-        self.countries.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose)
+        self.countries.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
         self.print_delimiter("states")
-        self.states.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose)
+        self.states.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
         self.print_delimiter("cities")
-        self.cities.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose)
+        self.cities.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
     
-    def download_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+    def download_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
         self.print_delimiter("countries")
-        self.countries.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose)
+        self.countries.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
         
         self.print_delimiter("states")
-        self.states.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose)
+        self.states.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
         self.print_delimiter("cities")
-        self.cities.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose)
+        self.cities.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
-    def download_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True) -> None:
+    def download_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
         self.print_delimiter("states")
-        self.states.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose)
+        self.states.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
         self.print_delimiter("cities")
-        self.cities.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose)
+        self.cities.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
     def postprocess_postals_wikipedia(self, verbose: bool = True) -> None:
         self.print_delimiter("states")
