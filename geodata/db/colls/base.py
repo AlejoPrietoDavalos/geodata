@@ -72,8 +72,10 @@ class BaseRegionColl(ABC):
     def column_name_english(self) -> str:
         return f"{self.name_singular}_name_english"
 
-    def iter_models(self) -> Generator[Country | State | City, None, None]:
-        return (self.cls_coll(**model_doc) for model_doc in self.coll.find({}))
+    def iter_models(self, search_dict: dict = None) -> Generator[Country | State | City, None, None]:
+        if search_dict is None:
+            search_dict = {}
+        return (self.cls_coll(**model_doc) for model_doc in self.coll.find(search_dict))
 
 
     def find_id_wikidata_none(self) -> Cursor:
@@ -147,7 +149,7 @@ class BaseRegionColl(ABC):
         return id_csc, id_wikidata
 
     def search_all_none_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        num_docs = sum(1 for _ in self.find_id_wikidata_none())
+        num_docs = self.coll.count_documents({self.column_id_wikidata: None})
 
         if with_concurrent:
             with ThreadPoolExecutor(max_workers=max_workers) as pool:
@@ -196,7 +198,7 @@ class BaseRegionColl(ABC):
         return websites, postal_codes
     
     def search_all_websites_and_postal_codes(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        num_docs = sum(1 for _ in self.coll.find({}))
+        num_docs = self.coll.count_documents({})
 
         if with_concurrent:
             with ThreadPoolExecutor(max_workers=max_workers) as pool:
@@ -310,7 +312,7 @@ class BaseRegionColl(ABC):
                 print(msg)
 
     def search_all_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        num_docs = sum(1 for _ in self.coll.find({}))
+        num_docs = self.coll.count_documents({})
 
         if with_concurrent:
             with ThreadPoolExecutor(max_workers=max_workers) as pool:
@@ -340,7 +342,7 @@ class BaseRegionColl(ABC):
                 print(f"id_csc={model.id_csc} | postal_codes_wikipedia_clean={model.postal_codes_wikipedia_clean}")
 
     def postprocess_all_postal_codes_wikipedia(self, verbose: bool = True) -> List[str]:
-        num_docs = sum(1 for _ in self.coll.find({}))
+        num_docs = self.coll.count_documents({})
 
         for i, model in enumerate(self.iter_models(), start=1):
             self.postprocess_postal_codes_wikipedia(model=model, verbose=verbose)
@@ -376,7 +378,7 @@ class BaseRegionColl(ABC):
         return postal_codes
 
     def search_all_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        num_docs = sum(1 for _ in self.coll.find({}))
+        num_docs = self.coll.count_documents({})
         
         if with_concurrent:
             with ThreadPoolExecutor(max_workers=max_workers) as pool:
