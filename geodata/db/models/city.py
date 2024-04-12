@@ -14,7 +14,10 @@ class City(GeoZoneModel):
     city_id_wikidata: Optional[str] = None
     postal_codes_wikipedia: List[str] = Field(default_factory=list)
     postal_codes_wikipedia_clean: List[str] = Field(default_factory=list)
-    
+    municipality_street: Optional[str] = None
+    municipality_postal_code: Optional[str] = None
+    municipality_place: Optional[str] = None
+
     @property
     def name(self) -> str:
         return self.city_name
