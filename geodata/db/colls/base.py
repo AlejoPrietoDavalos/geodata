@@ -1,6 +1,6 @@
-from typing import Type, Tuple, List, Literal, Generator
+from typing import Type, Tuple, List, Generator
 from datetime import datetime, UTC
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import time
@@ -42,12 +42,14 @@ class BaseRegionColl(ABC):
     def __init__(self, coll: Collection):
         self._coll = coll
     
-    @abstractproperty
+    @property
+    @abstractmethod
     def name_singular(self) -> str:
         """ Name of the collection in singular."""
         ...
     
-    @abstractproperty
+    @property
+    @abstractmethod
     def cls_coll(self) -> Type[GeoZoneModel]:
         """ Class used for the data model."""
         ...
@@ -233,7 +235,7 @@ class BaseRegionColl(ABC):
             
             if update_fields:
                 update_fields[UPDATED_TIME] = doc_new[UPDATED_TIME]
-                self.coll.update_one({self.column_id_csc: doc_new[model_new.id_csc]}, {"$set": update_fields})
+                self.coll.update_one({self.column_id_csc: model_new.id_csc}, {"$set": update_fields})
             is_new = False
             return is_new
 

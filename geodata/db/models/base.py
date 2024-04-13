@@ -1,4 +1,4 @@
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List
 
@@ -14,27 +14,32 @@ class GeoZoneModel(ABC, BaseModel):
     websites_wikidata: List[str] = Field(default_factory=list)
     postal_codes_wikidata: List[str] = Field(default_factory=list)
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def name(self) -> str:
         """ CSC name of the entity. Sometimes English, sometimes not."""
         ...
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def name_native(self) -> str | None:
         """ Native name of the entity."""
         ...
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def name_english(self) -> str | None:
         """ English name of the entity."""
         ...
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def id_csc(self) -> int:
         """ Country/State/City id csc."""
         ...
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def id_wikidata(self) -> str | None:
         """ Country/State/City id wikidata."""
         ...
