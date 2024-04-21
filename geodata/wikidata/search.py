@@ -2,6 +2,9 @@ from typing import Tuple, List
 import time
 
 from SPARQLWrapper import QueryResult
+from tenacity import retry, stop_after_attempt, wait_fixed
+TENACITY_WAIT = 60
+TENACITY_STOP = 3
 
 from geodata.wikidata.querys import (
     query_country_id_wikidata,
@@ -69,7 +72,6 @@ def search_id_wikidata(model: Country | State | City) -> Tuple[int, str | None]:
     return id_csc, id_wikidata
 
 
-
 def search_websites_and_postal_codes(id_wikidata: str | None) -> Tuple[List[str], List[str]]:
     if id_wikidata is None:
         return [], []
@@ -87,46 +89,8 @@ def search_websites_and_postal_codes(id_wikidata: str | None) -> Tuple[List[str]
     return websites, postal_codes
 
 
-
+@retry(stop=stop_after_attempt(TENACITY_STOP), wait=wait_fixed(TENACITY_WAIT))
 def search_name_native(id_wikidata: str | None, lang: str) -> str | None:
-    executed_complete = False
-    tries = 0
-    while not executed_complete:
-        try:
-            name_native = _search_name_native(id_wikidata=id_wikidata, lang=lang)
-            executed_complete = True
-        except Exception as e:
-            tries += 1
-            if tries == 3:
-                name_native = None
-                executed_complete = True
-            else:
-                print("~"*40)
-                print(f"ERROR - {id_wikidata} - TIMEOUT 60 SECONDS")
-                print("~"*40)
-                time.sleep(60)
-    return name_native
-
-def search_name_english(id_wikidata: str | None) -> str | None:
-    executed_complete = False
-    tries = 0
-    while not executed_complete:
-        try:
-            name_english = _search_name_english(id_wikidata=id_wikidata)
-            executed_complete = True
-        except Exception as e:
-            tries += 1
-            if tries == 3:
-                name_english = None
-                executed_complete = True
-            else:
-                print("~"*40)
-                print(f"ERROR - {id_wikidata} - TIMEOUT 60 SECONDS")
-                print("~"*40)
-                time.sleep(60)
-    return name_english
-
-def _search_name_native(id_wikidata: str | None, lang: str) -> str | None:
     if lang == "" or id_wikidata is None:
         return None
     query = query_name_native(id_wikidata, lang)
@@ -137,7 +101,8 @@ def _search_name_native(id_wikidata: str | None, lang: str) -> str | None:
         name_native = None
     return name_native
 
-def _search_name_english(id_wikidata: str | None) -> str | None:
+@retry(stop=stop_after_attempt(TENACITY_STOP), wait=wait_fixed(TENACITY_WAIT))
+def search_name_english(id_wikidata: str | None) -> str | None:
     if id_wikidata is None:
         return None
     query = query_name_english(id_wikidata)
@@ -147,4 +112,3 @@ def _search_name_english(id_wikidata: str | None) -> str | None:
     else:
         name_english = None
     return name_english
-
