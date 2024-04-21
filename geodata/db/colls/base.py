@@ -14,13 +14,14 @@ import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from geodata.wikidata.search import (
-    search_id_wikidata,
-    search_websites_and_postal_codes,
-    country_code_to_lang,
-    search_name_native,
-    search_name_english
+    search_websites_and_postal_codes, country_code_to_lang,
+    search_id_wikidata, search_name_native, search_name_english
 )
-from geodata.db.models.base import GeoZoneModel
+from geodata.db.models.base import (
+    GeoZoneModel, OK, EXEC, STATUS, DownType, DownStatus,
+    DOWN_ID_WIKIDATA, DOWN_WEBSITES_POSTALS,
+    DOWN_NAME_NATIVE_ENGLISH, DOWN_POSTALS_WIKIPEDIA
+)
 from geodata.db.models.country import Country
 from geodata.db.models.state import State
 from geodata.db.models.city import City
@@ -78,14 +79,20 @@ class BaseRegionColl(ABC):
     @property
     def column_name_english(self) -> str:
         return f"{self.name_singular}_name_english"
+    
+    def status_key(self, *, down_type: DownType) -> str:
+        return f"{STATUS}.{down_type}"
 
+    def filter_status(self, *, down_type: DownType, down_status: DownStatus) -> dict:
+        return {self.status_key(down_type=down_type): down_status}
+    
+    def update_one_status(self, id_csc: int, down_type: DownType, down_status: DownStatus) -> None:
+        self.coll.update_one({self.column_id_csc: id_csc}, {"$set": {self.status_key(down_type=down_type): down_status}})
+    
     def iter_models(self, search_dict: dict = None) -> Generator[Country | State | City, None, None]:
         if search_dict is None:
             search_dict = {}
         return (self.cls_coll(**model_doc) for model_doc in self.coll.find(search_dict))
-
-    def find_id_wikidata_none(self) -> Cursor:
-        return self.coll.find({self.column_id_wikidata: None})
 
     def add_updated_time_to_set(self, dict2set: dict) -> dict:
         current_time = datetime.now(tz=UTC)
@@ -143,11 +150,24 @@ class BaseRegionColl(ABC):
     def search_id_wikidata(self, model: Country | State | City, verbose: bool = True) -> None:
         try:
             self._search_id_wikidata(model=model, verbose=verbose)
+            self.update_one_status(id_csc=model.id_csc, down_type=DOWN_ID_WIKIDATA, down_status=OK)
         except Exception as e:
             print(e)
 
+    def get_filter_models(self, *, filter_: dict, down_type: DownType) -> dict:
+        filter_models = filter_.copy()
+        status_key = self.status_key(down_type=down_type)
+
+        filter_status_exec = self.filter_status(down_type=down_type, down_status=EXEC)
+        if self.coll.count_documents(filter_status_exec) != 0:
+            return filter_status_exec
+        else:
+            self.coll.update_many(filter_models, {"$set": {status_key: EXEC}})
+            return filter_models
+
     def search_all_none_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        models = list(self.cls_coll(**doc) for doc in self.find_id_wikidata_none())
+        filter_models = self.get_filter_models(filter_={self.column_id_wikidata: None}, down_type=DOWN_ID_WIKIDATA)
+        models = list(self.iter_models(filter_models))
         num_docs = len(models)
 
         if with_concurrent:
@@ -183,11 +203,13 @@ class BaseRegionColl(ABC):
     def search_websites_and_postal_codes(self, model: Country | State | City, verbose: bool = True) -> None:
         try:
             self._search_websites_and_postal_codes(model=model, verbose=verbose)
+            self.update_one_status(id_csc=model.id_csc, down_type=DOWN_WEBSITES_POSTALS, down_status=OK)
         except Exception as e:
             print(e)
     
     def search_all_websites_and_postal_codes(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        models = list(self.iter_models())
+        filter_models = self.get_filter_models(filter_={}, down_type=DOWN_WEBSITES_POSTALS)
+        models = list(self.iter_models(filter_models))
         num_docs = len(models)
 
         if with_concurrent:
@@ -275,12 +297,14 @@ class BaseRegionColl(ABC):
             json.dump(csc_broken, f)
 
     def search_name_native_and_english(self, model: Country | State | City, verbose: bool = True) -> None:
+        is_all_exec_ok = True
         lang = country_code_to_lang(model.country_code)
         if model.id_wikidata is not None and lang != "":
             try:
                 name_native = search_name_native(model.id_wikidata, lang) if model.name_native is None else None
             except:
                 name_native = None
+                is_all_exec_ok = False
         else:
             name_native = None
         
@@ -291,6 +315,7 @@ class BaseRegionColl(ABC):
                 name_english = search_name_english(model.id_wikidata) if model.name_english is None else None
             except:
                 name_english = None
+                is_all_exec_ok = False
         else:
             name_english = None
         
@@ -309,9 +334,13 @@ class BaseRegionColl(ABC):
                     msg.append(f"name_english={name_english}")
                 msg = " | ".join(msg)
                 print(msg)
+        if is_all_exec_ok:
+            self.update_one_status(id_csc=model.id_csc, down_type=DOWN_NAME_NATIVE_ENGLISH, down_status=OK)
 
     def search_all_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        models = list(self.iter_models({"$or": [{self.column_name_native: None}, {self.column_name_english: None}]}))
+        _f = {"$or": [{self.column_name_native: None}, {self.column_name_english: None}]}
+        filter_models = self.get_filter_models(filter_=_f, down_type=DOWN_NAME_NATIVE_ENGLISH)
+        models = list(self.iter_models(filter_models))
         num_docs = len(models)
         
         if with_concurrent:
@@ -375,11 +404,13 @@ class BaseRegionColl(ABC):
     def search_postals_wikipedia(self, model: State | City, verbose: bool = True) -> None:
         try:
             self._search_postals_wikipedia(model=model, verbose=verbose)
+            self.update_one_status(id_csc=model.id_csc, down_type=DOWN_POSTALS_WIKIPEDIA, down_status=OK)
         except Exception as e:
             print(e)
 
     def search_all_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        models = list(self.iter_models())
+        filter_models = self.get_filter_models(filter_={}, down_type=DOWN_POSTALS_WIKIPEDIA)
+        models = list(self.iter_models(filter_models))
         num_docs = len(models)
         
         if with_concurrent:
