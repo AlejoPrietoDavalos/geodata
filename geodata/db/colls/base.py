@@ -86,6 +86,10 @@ class BaseRegionColl(ABC):
     def filter_status(self, *, down_type: DownType, down_status: DownStatus) -> dict:
         return {self.status_key(down_type=down_type): down_status}
     
+    def is_status_exec(self, *, down_type: DownType) -> bool:
+        filter_status_exec = self.filter_status(down_type=down_type, down_status=EXEC)
+        return self.coll.count_documents(filter_status_exec) != 0
+    
     def update_one_status(self, id_csc: int, down_type: DownType, down_status: DownStatus) -> None:
         self.coll.update_one({self.column_id_csc: id_csc}, {"$set": {self.status_key(down_type=down_type): down_status}})
     
