@@ -8,8 +8,9 @@ def url_wikidata_sparql() -> str:
 def get_sparql() -> SPARQLWrapper:
     return SPARQLWrapper(url_wikidata_sparql())
 
-def results_from_query(query: str) -> QueryResult.ConvertResult:
+def results_from_query(query: str, timeout: int = 60) -> QueryResult.ConvertResult:
     sparql = get_sparql()
+    sparql.setTimeout(timeout=timeout)
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
     sparql.addCustomHttpHeader("User-Agent", random_user_agent())
