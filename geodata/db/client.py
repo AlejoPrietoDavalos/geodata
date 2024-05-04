@@ -1,5 +1,3 @@
-from typing import Literal
-from functools import cached_property
 import os
 from abc import ABC
 from dotenv import load_dotenv
@@ -14,6 +12,10 @@ from geodata.db.colls.countries import CountriesColl
 from geodata.db.colls.states import StatesColl
 from geodata.db.colls.cities import CitiesColl
 from geodata.db.colls.base import DEFAULT_WORKERS
+from geodata.db.models.base import (
+    OK, EXEC, DOWN_ID_WIKIDATA, DOWN_WEBSITES_POSTALS,
+    DOWN_NAME_NATIVE_ENGLISH, DOWN_POSTALS_WIKIPEDIA
+)
 
 __all__ = ["WorldDataDB", "WORLD_DATA", "COUNTRIES", "STATES", "CITIES"]
 
@@ -39,15 +41,15 @@ class BaseWorldDataDB(ABC):
     def db(self) -> Database:
         return self._db
 
-    @cached_property
+    @property
     def countries(self) -> CountriesColl:
         return CountriesColl(coll=self.db[COUNTRIES])
     
-    @cached_property
+    @property
     def states(self) -> StatesColl:
         return StatesColl(coll=self.db[STATES])
 
-    @cached_property
+    @property
     def cities(self) -> CitiesColl:
         return CitiesColl(coll=self.db[CITIES])
 
@@ -80,41 +82,71 @@ class WorldDataDB(BaseWorldDataDB):
         self.cities.process_df_csc(df_cities, verbose=verbose)
     
     def download_id_wikidata(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        self.print_delimiter("countries")
-        self.countries.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        is_countries_exec = self.countries.is_status_exec(down_type=DOWN_ID_WIKIDATA)
+        is_states_exec = self.states.is_status_exec(down_type=DOWN_ID_WIKIDATA)
+        is_cities_exec = self.cities.is_status_exec(down_type=DOWN_ID_WIKIDATA)
+        is_exec = is_countries_exec or is_states_exec or is_cities_exec
 
-        self.print_delimiter("states")
-        self.states.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        if is_countries_exec or not is_exec:
+            self.print_delimiter("countries")
+            self.countries.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
-        self.print_delimiter("cities")
-        self.cities.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        if is_states_exec or not is_exec:
+            self.print_delimiter("states")
+            self.states.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+
+        if is_cities_exec or not is_exec:
+            self.print_delimiter("cities")
+            self.cities.search_all_none_id_wikidata(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
     def download_websites_postals(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        self.print_delimiter("countries")
-        self.countries.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        is_countries_exec = self.countries.is_status_exec(down_type=DOWN_WEBSITES_POSTALS)
+        is_states_exec = self.states.is_status_exec(down_type=DOWN_WEBSITES_POSTALS)
+        is_cities_exec = self.cities.is_status_exec(down_type=DOWN_WEBSITES_POSTALS)
+        is_exec = is_countries_exec or is_states_exec or is_cities_exec
 
-        self.print_delimiter("states")
-        self.states.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        if is_countries_exec or not is_exec:
+            self.print_delimiter("countries")
+            self.countries.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
-        self.print_delimiter("cities")
-        self.cities.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        if is_states_exec or not is_exec:
+            self.print_delimiter("states")
+            self.states.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+
+        if is_cities_exec or not is_exec:
+            self.print_delimiter("cities")
+            self.cities.search_all_websites_and_postal_codes(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
     
     def download_name_native_and_english(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        self.print_delimiter("countries")
-        self.countries.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        is_countries_exec = self.countries.is_status_exec(down_type=DOWN_NAME_NATIVE_ENGLISH)
+        is_states_exec = self.states.is_status_exec(down_type=DOWN_NAME_NATIVE_ENGLISH)
+        is_cities_exec = self.cities.is_status_exec(down_type=DOWN_NAME_NATIVE_ENGLISH)
+        is_exec = is_countries_exec or is_states_exec or is_cities_exec
         
-        self.print_delimiter("states")
-        self.states.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
-
-        self.print_delimiter("cities")
-        self.cities.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        if is_countries_exec or not is_exec:
+            self.print_delimiter("countries")
+            self.countries.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        
+        if is_states_exec or not is_exec:
+            self.print_delimiter("states")
+            self.states.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        
+        if is_cities_exec or not is_exec:
+            self.print_delimiter("cities")
+            self.cities.search_all_name_native_and_english(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
     def download_postals_wikipedia(self, max_workers: int = DEFAULT_WORKERS, verbose: bool = True, with_concurrent: bool = True) -> None:
-        self.print_delimiter("states")
-        self.states.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        is_states_exec = self.states.is_status_exec(down_type=DOWN_POSTALS_WIKIPEDIA)
+        is_cities_exec = self.cities.is_status_exec(down_type=DOWN_POSTALS_WIKIPEDIA)
+        is_exec = is_states_exec or is_cities_exec
 
-        self.print_delimiter("cities")
-        self.cities.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+        if is_states_exec or not is_exec:
+            self.print_delimiter("states")
+            self.states.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
+
+        if is_cities_exec or not is_exec:
+            self.print_delimiter("cities")
+            self.cities.search_all_postals_wikipedia(max_workers=max_workers, verbose=verbose, with_concurrent=with_concurrent)
 
     def postprocess_postals_wikipedia(self, verbose: bool = True) -> None:
         self.print_delimiter("states")
