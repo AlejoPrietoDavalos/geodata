@@ -1,5 +1,8 @@
-from datetime import datetime, UTC
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import SupportsIndex
+
+UTC = ZoneInfo("UTC")
 
 def get_datetime_now() -> datetime:
     """ Retorna el tiempo actual en UTC."""

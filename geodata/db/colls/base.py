@@ -1,5 +1,5 @@
 from typing import Type, Tuple, List, Generator
-from datetime import datetime, UTC
+from datetime import datetime
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
@@ -27,6 +27,7 @@ from geodata.db.models.state import State
 from geodata.db.models.city import City
 from geodata.wikipedia.postal_wikipedia import get_postal_codes_from_wikipedia
 from geodata.wikipedia.process_postals.utils import postprocess_postal_codes_wikipedia
+from geodata.utils_time import UTC
 
 DEFAULT_WORKERS = 5
 COUNTRY_CODE = "country_code"
