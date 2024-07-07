@@ -7,3 +7,4 @@ SPARQLWrapper==2.0.0
 tenacity==8.2.3
 fake-useragent==1.5.1
 python-dotenv==1.0.1
+geopandas==1.0.1
