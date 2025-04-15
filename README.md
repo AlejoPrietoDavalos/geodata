@@ -1,3 +1,5 @@
+![geodata_plot](plots/example_centroids_countries_states_cities.png)
+
 ## Objetive
 - The client requires a script capable of:
     1. **Download and update** information about **countries**, **states** and **cities** with automatic updating.
